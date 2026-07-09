@@ -36,7 +36,7 @@
        :desc "Format buffer/region"                  "f"   #'+format/region-or-buffer
        :desc "Find implementations"                  "i"   #'+lookup/implementations
        :desc "Jump to documentation"                 "k"   #'+lookup/documentation
-       :desc "Send buffer/region to repl"            "s"   #'+eval/buffer-or-region-in-repl
+       :desc "Send to repl"                          "s"   #'+eval/send-region-to-repl
        :desc "Find type definition"                  "t"   #'+lookup/type-definition
        :desc "Delete trailing whitespace"            "w"   #'delete-trailing-whitespace
        :desc "Delete trailing newlines"              "W"   #'doom/delete-trailing-newlines
@@ -148,7 +148,8 @@
 
       ;;; <leader> i --- insert
       (:prefix-map ("i" . "insert")
-       :desc "Emoji"                         "e"   #'emoji-search
+       (:when (> emacs-major-version 28)
+         :desc "Emoji"                       "e"   #'emoji-search)
        (:when (modulep! :ui emoji)
          :desc "Emoji"                       "e"   #'emojify-insert-emoji)
        :desc "Current file name"             "f"   #'+default/insert-file-path
@@ -237,9 +238,6 @@
         :desc "Open directory in dirvish"     "/" #'dirvish
         :desc "Project sidebar"               "p" #'dirvish-side
         :desc "Find file in project sidebar"  "P" #'+dired/dirvish-side-and-follow)
-       (:when (modulep! :term ghostel)
-        :desc "Toggle ghostel popup"          "t" #'+ghostel/toggle
-        :desc "Open ghostel here"             "T" #'+ghostel/here)
        (:when (modulep! :term shell)
         :desc "Toggle shell popup"            "t" #'+shell/toggle
         :desc "Open shell here"               "T" #'+shell/here)
@@ -253,15 +251,18 @@
         :desc "Toggle eshell popup"           "e" #'+eshell/toggle
         :desc "Open eshell here"              "E" #'+eshell/here)
        (:when (modulep! :os macos)
-        :desc "Reveal in Finder"           "o" #'+macos/reveal-in-finder
-        :desc "Reveal project in Finder"   "O" #'+macos/reveal-project-in-finder
+         :desc "Open in app"                "o" #'+macos/open-current-file-in-app
+         :desc "Reveal in Finder"           "f" #'+macos/reveal-in-finder
+         :desc "Reveal project in Finder"   "F" #'+macos/reveal-project-in-finder
         (:prefix ("s" . "send to application")
          :desc "Send to Transmit"           "t" #'+macos/send-to-transmit
          :desc "Send project to Transmit"   "T" #'+macos/send-project-to-transmit
          :desc "Send to Launchbar"          "l" #'+macos/send-to-launchbar
          :desc "Send project to Launchbar"  "L" #'+macos/send-project-to-launchbar
-         :desc "Open in iTerm"              "i" #'+macos/open-in-iterm
-         :desc "Open in new iTerm window"   "I" #'+macos/open-in-iterm-new-window))
+         :desc "Open in Kitty"              "i" #'+macos/open-in-kitty
+         ;; :desc "Open in iTerm"              "i" #'+macos/open-in-iterm
+         ;; :desc "Open in new iTerm window"   "I" #'+macos/open-in-iterm-new-window
+         ))
        (:when (modulep! :tools docker)
         :desc "Docker" "D" #'docker)
        (:when (modulep! :tools llm)
@@ -349,8 +350,8 @@
       ;;; <leader> v --- versioning
       (:prefix-map ("v" . "versioning")
        :desc "Git revert file"             "R"   #'vc-revert
-       :desc "Kill link to remote"         "y"   #'+vc/git-link-kill
-       :desc "Kill link to homepage"       "Y"   #'+vc/git-link-kill-homepage
+       :desc "Kill link to remote"         "y"   #'+vc/browse-at-remote-kill
+       :desc "Kill link to homepage"       "Y"   #'+vc/browse-at-remote-kill-homepage
        (:when (modulep! :ui vc-gutter)
         :desc "Git revert hunk"            "r"   #'+vc-gutter/revert-hunk
         :desc "Git stage hunk"             "s"   #'+vc-gutter/stage-hunk
@@ -377,8 +378,8 @@
          :desc "Find issue"                "i"   #'forge-visit-issue
          :desc "Find pull request"         "p"   #'forge-visit-pullreq)
         (:prefix ("o" . "open in browser")
-         :desc "Browse file or region"     "."   #'+vc/git-link
-         :desc "Browse homepage"           "h"   #'+vc/git-link-homepage
+         :desc "Browse file or region"     "."   #'+vc/browse-at-remote
+         :desc "Browse homepage"           "h"   #'+vc/browse-at-remote-homepage
          :desc "Browse remote"             "r"   #'forge-browse-remote
          :desc "Browse commit"             "c"   #'forge-browse-commit
          :desc "Browse an issue"           "i"   #'forge-browse-issue

@@ -63,7 +63,7 @@ input and search the whole buffer for it."
                  (consult-line
                   (replace-regexp-in-string
                    " " "\\\\ "
-                   (regexp-quote
+                   (doom-pcre-quote
                     (buffer-substring-no-properties start end))))
                (call-interactively #'consult-line)))))))
 

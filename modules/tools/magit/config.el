@@ -43,10 +43,15 @@ FUNCTION
   :defer-incrementally (compat with-editor eieio transient git-commit)
   :init
   (setq magit-auto-revert-mode nil)  ; we do this ourselves further down
+  ;; Must be set early to prevent ~/.config/emacs/transient from being created
+  (setq transient-levels-file  (file-name-concat doom-profile-data-dir "transient" "levels")
+        transient-values-file  (file-name-concat doom-profile-data-dir "transient" "values")
+        transient-history-file (file-name-concat doom-profile-data-dir "transient" "history"))
   :config
   (set-debug-var! 'magit-refresh-verbose)
 
-  (setq magit-diff-refine-hunk t ; show granular diffs in selected hunk
+  (setq transient-default-level 5
+        magit-diff-refine-hunk t ; show granular diffs in selected hunk
         ;; Don't autosave repo buffers. This is too magical, and saving can
         ;; trigger a bunch of unwanted side-effects, like save hooks and
         ;; formatters. Trust the user to know what they're doing.
@@ -80,15 +85,14 @@ FUNCTION
       ;; Only invalidate the hot cache and nothing else (everything else is
       ;; expensive busy work, and we don't want to slow down magit's
       ;; refreshing).
-      (when (bound-and-true-p projectile-mode)
-        (let ((hash (buffer-hash))
-              projectile-require-project-root
-              projectile-enable-caching
-              projectile-verbose)
-          (unless (equal +magit--last-hash hash)
-            (letf! ((#'recentf-cleanup #'ignore))
-              (projectile-invalidate-cache nil))
-            (setq-local +magit--last-hash hash))))))
+      (let ((hash (buffer-hash))
+            projectile-require-project-root
+            projectile-enable-caching
+            projectile-verbose)
+        (unless (equal +magit--last-hash hash)
+          (letf! ((#'recentf-cleanup #'ignore))
+            (projectile-invalidate-cache nil))
+          (setq-local +magit--last-hash hash)))))
   ;; Use a more efficient strategy to auto-revert buffers whose git state has
   ;; changed: refresh the visible buffers immediately...
   (add-hook 'magit-post-refresh-hook #'+magit-mark-stale-buffers-h)
@@ -125,16 +129,19 @@ FUNCTION
   ;;    status screen.
   (setq magit-display-buffer-function #'+magit-display-buffer-fn
         magit-bury-buffer-function #'magit-mode-quit-window)
+  ;; Pop up transient windows at the bottom of the window where it was invoked.
+  ;; This is more ergonomic for users with large displays or many splits.
+  (setq transient-display-buffer-action
+        '(display-buffer-below-selected
+          (dedicated . t)
+          (inhibit-same-window . t))
+        transient-show-during-minibuffer-read t)
 
-  (set-popup-rule! "^\\(?:\\*magit\\|magit:\\)" :ignore t)
+  (set-popup-rule! "^\\(?:\\*magit\\|magit:\\| \\*transient\\*\\)" :ignore t)
 
   ;; The mode-line isn't useful in these popups and take up valuable screen
   ;; estate, so free it up.
   (add-hook 'magit-popup-mode-hook #'mode-line-invisible-mode)
-
-  ;; Line numbers add nothing to magit's status/log/diff/refs buffers
-  (add-hook 'magit-popup-mode-hook #'doom-disable-line-numbers-h)
-  (add-hook 'magit-mode-hook #'doom-disable-line-numbers-h)
 
   ;; Add additional switches that seem common enough
   (transient-append-suffix 'magit-fetch "-p"
@@ -153,6 +160,9 @@ FUNCTION
   ;; affected buffers (or at least marking them as need-to-be-reverted).
   (define-key magit-mode-map "q" #'+magit/quit)
   (define-key magit-mode-map "Q" #'+magit/quit-all)
+
+  ;; Close transient with ESC
+  (define-key transient-map [escape] #'transient-quit-one)
 
   (defun +magit-enlargen-fringe-h ()
     "Make fringe larger in magit."
@@ -189,7 +199,7 @@ FUNCTION
   :after-call magit-status
   :commands forge-create-pullreq forge-create-issue
   :preface
-  (setq forge-database-file (doom-profile-data-dir t "forge" "forge-database.sqlite"))
+  (setq forge-database-file (file-name-concat doom-profile-data-dir "forge" "forge-database.sqlite"))
   (setq forge-add-default-bindings (not (modulep! :editor evil +everywhere)))
   :init
   (after! ghub-graphql
@@ -209,15 +219,18 @@ FUNCTION
 
 (use-package! code-review
   :when (modulep! +forge)
-  :defer t
+  :after magit
   :init
-  ;; HACK: See jwiegley/use-package#829
-  (after! magit (require 'code-review))
-  (setq code-review-db-database-file (doom-profile-data-dir t "code-review" "code-review-db-file.sqlite")
-        code-review-log-file (doom-profile-data-dir t "code-review" "code-review-error.log")
-        code-review-download-dir (doom-profile-data-dir t "code-review/"))
+  (after! evil-collection-magit
+    (dolist (binding evil-collection-magit-mode-map-bindings)
+      (pcase-let* ((`(,states _ ,evil-binding ,fn) binding))
+        (dolist (state states)
+          (evil-collection-define-key state 'code-review-mode-map evil-binding fn))))
+    (evil-set-initial-state 'code-review-mode evil-default-state))
+  (setq code-review-db-database-file (file-name-concat doom-profile-data-dir "code-review" "code-review-db-file.sqlite")
+        code-review-log-file (file-name-concat doom-profile-data-dir "code-review" "code-review-error.log")
+        code-review-download-dir (file-name-concat doom-profile-data-dir "code-review/"))
   :config
-  (set-evil-initial-state! 'code-review-mode 'normal)
   (transient-append-suffix 'magit-merge "d"
     '("y" "Review pull request" +magit/start-code-review))
   (after! forge
@@ -282,11 +295,7 @@ FUNCTION
         (setcar desc (cdr key))))
     (evil-define-key* evil-collection-magit-state git-rebase-mode-map
       "gj" #'git-rebase-move-line-down
-      "gk" #'git-rebase-move-line-up))
-
-  (after! code-review
-    (pcase-dolist (`(,states _ ,binding ,fn) evil-collection-magit-mode-map-bindings)
-      (evil-collection-define-key states 'code-review-mode-map binding fn))))
+      "gk" #'git-rebase-move-line-up)))
 
 
 (use-package! evil-collection-magit-section

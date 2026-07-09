@@ -12,7 +12,7 @@
   "Where to store eshell configuration files, as opposed to
 `eshell-directory-name', which is where Doom will store temporary/data files.")
 
-(defvar eshell-directory-name (doom-profile-data-dir t "eshell")
+(defvar eshell-directory-name (file-name-concat doom-profile-data-dir "eshell")
   "Where to store temporary/data files, as opposed to `eshell-config-dir',
 which is where Doom will store eshell configuration files.")
 
@@ -126,7 +126,6 @@ You should use `set-eshell-alias!' to change this.")
       (set-display-table-slot standard-display-table 0 ?\ )))
 
   (add-hook 'eshell-mode-hook #'mode-line-invisible-mode)
-  (add-hook 'eshell-mode-hook #'doom-disable-line-numbers-h)
 
   ;; Remove hscroll-margin in shells, otherwise you get jumpiness when the
   ;; cursor comes close to the left/right edges of the window.
@@ -154,15 +153,57 @@ You should use `set-eshell-alias!' to change this.")
     (setq +eshell--default-aliases eshell-command-aliases-list
           eshell-command-aliases-list
           (append eshell-command-aliases-list
-                  +eshell-aliases))))
+                  +eshell-aliases)))
+
+  ;; HACK: Fixes #3817, where eshell completion after quotes is broken on Emacs
+  ;;   28 and older.
+  ;; CREDIT: Extracted from `cape''s cape-wrap-silent and cape-wrap-purify.
+  ;; REVIEW: Remove when Doom drops 28 support.
+  (when (< emacs-major-version 29)
+    (defadvice! +eshell--silent-a (capf)
+      "Call CAPF and silence it (no messages, no errors).
+This function can be used as an advice around an existing Capf."
+      :around #'pcomplete-completions-at-point
+      (letf! ((defmacro silent (&rest body) `(quiet! (ignore-errors ,@body)))
+              (defmacro wrapped-table (wrap body)
+                `(lambda (str pred action)
+                   (,@body
+                    (let ((result (complete-with-action action table str pred)))
+                      (when
+                          (and (eq action 'completion--unquote)
+                               (functionp (cadr result)))
+                        (cl-callf ,wrap (cadr result)))
+                      result))))
+              (defun* silent-table (table) (wrapped-table silent-table (silent))))
+        (pcase (silent (funcall capf))
+          (`(,beg ,end ,table . ,plist)
+           `(,beg ,end ,(silent-table table) ,@plist)))))
+
+    (defadvice! +eshell--purify-a (capf)
+      "Call CAPF and ensure that it does not illegally modify the buffer. This
+function can be used as an advice around an existing Capf. It has been
+introduced mainly to fix the broken `pcomplete-completions-at-point' function in
+Emacs versions < 29."
+      ;; bug#50470: Fix Capfs which illegally modify the buffer or which
+      ;; illegally call `completion-in-region'. The workaround here was proposed
+      ;; by @jakanakaevangeli and is used in his capf-autosuggest package.
+      :around #'pcomplete-completions-at-point
+      (catch 'illegal-completion-in-region
+        (condition-case nil
+            (let ((buffer-read-only t)
+                  (inhibit-read-only nil)
+                  (completion-in-region-function
+                   (lambda (beg end coll pred)
+                     (throw 'illegal-completion-in-region
+                            (list beg end coll :predicate pred)))))
+              (funcall capf))
+          (buffer-read-only nil))))))
 
 
 (after! esh-mode
   (map! :map eshell-mode-map
         :n  "RET"    #'+eshell/goto-end-of-prompt
         :n  [return] #'+eshell/goto-end-of-prompt
-        :nv "[["     #'eshell-previous-prompt
-        :nv "]]"     #'eshell-next-prompt
         :ni "C-j"    #'eshell-next-matching-input-from-input
         :ni "C-k"    #'eshell-previous-matching-input-from-input
         :ig "C-d"    #'+eshell/quit-or-delete-char
@@ -267,8 +308,7 @@ when inhibited to show history matches."
           (add-hook 'pre-command-hook #'+eshell-syntax-highlight-maybe-h nil t)
         (remove-hook 'pre-command-hook #'+eshell-syntax-highlight-maybe-h t))))
 
-  (when (fboundp 'highlight-quoted-mode)
-    (add-hook 'eshell-syntax-highlighting-elisp-buffer-setup-hook #'highlight-quoted-mode)))
+  (add-hook 'eshell-syntax-highlighting-elisp-buffer-setup-hook #'highlight-quoted-mode))
 
 
 (use-package! pcmpl-args
@@ -277,6 +317,6 @@ when inhibited to show history matches."
   (dolist (cmd '("doom" "nix-shell"))
     (defalias (intern (concat "pcomplete/" cmd))
       #'pcmpl-args-pcomplete-on-help))
-  (dolist (cmd `(,doom-fd-executable ,doom-ripgrep-executable "exa" "emacsclient"))
+  (dolist (cmd '("fd" "rg" "exa" "emacsclient"))
     (defalias (intern (concat "pcomplete/" cmd))
       #'pcmpl-args-pcomplete-on-man)))

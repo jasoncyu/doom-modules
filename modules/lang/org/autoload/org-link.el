@@ -78,9 +78,9 @@ exist, and `org-link' otherwise."
   keystr)
 
 (defun +org-link--read-module-spec (module-spec-str)
-  (if (string-match-p "^[-+]" (string-trim-left module-spec-str))
+  (if (string-prefix-p "+" (string-trim-left module-spec-str))
       (let ((title (cadar (org-collect-keywords '("TITLE")))))
-        (if (and title (string-match-p "\\`:[a-z]+\\s-+[A-Za-z0-9]+\\'" title))
+        (if (and title (string-match-p "\\`:[a-z]+ [A-Za-z0-9]+\\'" title))
             (+org-link--read-module-spec (concat title " " module-spec-str))
           (list :category nil :module nil :flag (intern module-spec-str))))
     (cl-destructuring-bind (category &optional module flag)
@@ -88,7 +88,7 @@ exist, and `org-link' otherwise."
                           (if (string-prefix-p ":" module-spec-str)
                               module-spec-str
                             (concat ":" module-spec-str))
-                          "[ \n][-+]" nil))
+                          "[ \n]+" nil))
       (list :category category
             :module module
             :flag flag))))
@@ -165,7 +165,7 @@ exist, and `org-link' otherwise."
     (when flag
       (goto-char (point-min))
       (when (and (re-search-forward "^\\*+ \\(?:TODO \\)?Module flags")
-                 (re-search-forward (format "^\\s-*- [-+]%s ::[ \n]"
+                 (re-search-forward (format "^\\s-*- \\+%s ::[ \n]"
                                             (substring (symbol-name flag) 1))
                                     (save-excursion (org-get-next-sibling)
                                                     (point))))
@@ -173,10 +173,8 @@ exist, and `org-link' otherwise."
         (recenter)))))
 
 ;;;###autoload
-(defun +org-link--doom-module-link-activate-fn (start end module-path bracketed-p)
-  (if (not buffer-read-only)
-      (unless (string-blank-p module-path)
-        (add-text-properties start end `(display ,module-path)))
+(defun +org-link--doom-module-link-activate-fn (start end module-path _bracketed-p)
+  (when buffer-read-only
     (cl-destructuring-bind (&key category module flag)
         (+org-link--read-module-spec module-path)
       (let ((overall-face
@@ -199,9 +197,7 @@ exist, and `org-link' otherwise."
 
 ;;;###autoload
 (defun +org-link--doom-package-link-activate-fn (start end package _bracketed-p)
-  (if (not buffer-read-only)
-      (unless (string-blank-p package)
-        (add-text-properties start end `(display ,package)))
+  (when buffer-read-only
     (let ((overall-face
            (if (locate-library package)
                '((:underline nil :weight regular) org-link org-block italic)
@@ -430,6 +426,42 @@ exist, and `org-link' otherwise."
   (unless (org-in-regexp org-link-bracket-re 1)
     (user-error "No link at point"))
   (save-excursion
+    (let ((label (if (match-end 2)
+                     (match-string-no-properties 2)
+                   (org-link-unescape (match-string-no-properties 1)))))
+      (delete-region (match-beginning 0) (match-end 0))
+      (insert label))))
+
+;;;###autoload
+(defun +org/delete-link-and-file ()
+  "Delete the link at point and its associated file."
+  (interactive)
+  (unless (org-in-regexp org-link-bracket-re 1)
+    (user-error "No link at point"))
+  (let* ((link (org-link-unescape (match-string-no-properties 1)))
+         (type (and (string-match org-link-plain-re link)
+                    (match-string 1 link)))
+         (path (and (string-match org-link-plain-re link)
+                    (match-string 2 link)))
+         (file-path (cond
+                     ;; Handle file: links
+                     ((or (string= type "file") (string= type "lc") )
+                      (expand-file-name path))
+                     ;; Handle attachment: links
+                     ((string= type "attachment")
+                      (when (featurep 'org-attach)
+                        (org-attach-expand path)))
+                     ;; Handle relative file paths (no protocol)
+                     ((and (not type) (file-exists-p (expand-file-name link)))
+                      (expand-file-name link))
+                     ;; Handle absolute file paths (no protocol)
+                     ((and (not type) (file-name-absolute-p link) (file-exists-p link))
+                      link))))
+    (when (and file-path (file-exists-p file-path))
+      (when (yes-or-no-p (format "Delete file %s? " file-path))
+        (delete-file file-path)
+        (message "Deleted file: %s" file-path)))
+    ;; Remove the link regardless of whether file was deleted
     (let ((label (if (match-end 2)
                      (match-string-no-properties 2)
                    (org-link-unescape (match-string-no-properties 1)))))

@@ -83,6 +83,10 @@ Use `+emacs-lisp/change-working-buffer' to change this. Only applies to
   (add-hook! '(emacs-lisp-mode-hook lisp-data-mode-local-vars-hook)
              ;; Allow folding of outlines in comments
              #'outline-minor-mode
+             ;; Make parenthesis depth easier to distinguish at a glance
+             #'rainbow-delimiters-mode
+             ;; Make quoted symbols easier to distinguish from free variables
+             #'highlight-quoted-mode
              ;; Extend imenu support to Doom constructs
              #'+emacs-lisp-extend-imenu-h
              ;; Ensure straight sees modifications to installed packages
@@ -145,12 +149,6 @@ Use `+emacs-lisp/change-working-buffer' to change this. Only applies to
           "f" #'find-function
           "v" #'find-variable
           "l" #'find-library)))
-
-
-;; Make quoted symbols easier to distinguish from free variables
-(use-package! highlight-quoted
-  :hook emacs-lisp-mode
-  :hook lisp-data-mode-local-vars)
 
 
 (use-package! ielm
@@ -223,11 +221,8 @@ Use `+emacs-lisp/change-working-buffer' to change this. Only applies to
   ;; Add Doom's core and module demo files, so additional demos can be specified
   ;; by end-users (in $DOOMDIR/demos.org), by modules (modules/X/Y/demos.org),
   ;; or Doom's core (lisp/demos.org).
-  (dolist (file (doom-module-locate-paths (remove '(:user) (doom-module-list)) "demos.org"))
+  (dolist (file (doom-module-locate-paths (doom-module-list) "demos.org"))
     (add-to-list 'elisp-demos-user-files file))
-  ;; The user's demos.org should be first in the list so that
-  ;; `elisp-demos-add-demo' will add new ones to that instead of some module's.
-  (add-to-list 'elisp-demos-user-files (expand-file-name "demos.org" doom-user-dir))
 
   ;; HACK: These functions open Org files non-interactively without any
   ;;   performance optimizations. Given how prone org-mode is to being tied to

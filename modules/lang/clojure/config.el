@@ -48,7 +48,7 @@
 
 
 (use-package! clojure-mode
-  :defer t
+  :hook (clojure-mode . rainbow-delimiters-mode)
   :config
   (+clojure-common-config '(clojure-mode clojurec-mode clojurescript-mode)))
 
@@ -143,7 +143,7 @@
         cider-prompt-for-symbol nil
         cider-repl-history-display-duplicates nil
         cider-repl-history-display-style 'one-line
-        cider-repl-history-file (doom-profile-state-dir t "cider-repl-history")
+        cider-repl-history-file (file-name-concat doom-profile-state-dir "cider-repl-history")
         cider-repl-history-highlight-current-entry t
         cider-repl-history-quit-action 'delete-and-restore
         cider-repl-history-highlight-inserted-item t
@@ -252,7 +252,7 @@
   ;; Ensure that CIDER is used for sessions in org buffers.
   (when (modulep! :lang org)
     (after! ob-clojure
-      (setopt org-babel-clojure-backend 'cider)))
+      (setq! org-babel-clojure-backend 'cider)))
 
   ;; The CIDER welcome message obscures error messages that the above code is
   ;; supposed to be make visible.

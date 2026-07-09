@@ -1,7 +1,11 @@
 ;;; lang/dart/config.el -*- lexical-binding: t; -*-
 
-(defun +dart-common-config (mode)
-  (set-ligatures! mode
+(use-package! dart-mode
+  :hook (dart-mode . rainbow-delimiters-mode)
+  :config
+  (when (modulep! +lsp)
+    (add-hook 'dart-mode-local-vars-hook #'lsp! 'append))
+  (set-ligatures! '(dart-mode)
     ;; Functional
     :def "Function"
     :lambda "() =>"

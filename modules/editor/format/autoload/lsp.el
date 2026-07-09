@@ -47,7 +47,7 @@ mode unconditionally, call `+format-with-lsp-mode' instead."
 (cl-defun +format-lsp-buffer (&rest plist &key buffer callback &allow-other-keys)
   "Format the current buffer with any available lsp-mode or eglot formatter."
   (if-let* ((fn (with-current-buffer buffer (+format--lsp-fn)))
-            ((apply fn (car +format-region-range) (cdr +format-region-range)
+            ((apply fn (car +format--region-p) (cdr +format--region-p)
                     plist)))
       (funcall callback)
     (funcall callback "LSP server doesn't support formatting")))
@@ -58,10 +58,10 @@ mode unconditionally, call `+format-with-lsp-mode' instead."
 Won't forward the buffer to chained formatters if successful."
   (with-current-buffer buffer
     (let ((edits
-           (cond ((and (null beg) (plist-get (lsp--server-capabilities) :documentFormattingProvider))
+           (cond ((and (null beg) (lsp-feature? "textDocument/formatting"))
                   (lsp-request "textDocument/formatting"
                                (lsp--make-document-formatting-params)))
-                 ((plist-get (lsp--server-capabilities) :documentRangeFormattingProvider)
+                 ((lsp-feature? "textDocument/rangeFormatting")
                   (lsp-request "textDocument/rangeFormatting"
                                (lsp--make-document-range-formatting-params
                                 (or beg (point-min)) (or end (point-max)))))

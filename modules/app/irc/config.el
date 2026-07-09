@@ -134,7 +134,9 @@ playback."
 
 (use-package! circe-color-nicks
   :defer t
-  ;; HACK: See jwiegley/use-package#829
+  ;; NOTE: I avoid `:after' on purpose, because it convolutes load order and
+  ;;   makes it harder for users to know what to target with `after!' or
+  ;;   `with-eval-after-load' when trying to configure packages.
   :init (after! circe (require 'circe-color-nicks))
   :config
   (setq circe-color-nicks-min-constrast-ratio 4.5
@@ -144,7 +146,7 @@ playback."
 
 (use-package! circe-new-day-notifier
   :defer t
-  ;; HACK: See jwiegley/use-package#829
+  ;; NOTE: See NOTE in `circe-color-nicks' above.
   :init (after! circe (require 'circe-new-day-notifier))
   :config
   (enable-circe-new-day-notifier)
@@ -239,5 +241,5 @@ Courtesy of esh-mode.el"
 
 (use-package! lui-logging
   :after lui
-  :init (setq lui-logging-directory (doom-profile-state-dir t "lui"))
+  :init (setq lui-logging-directory (file-name-concat doom-profile-state-dir "lui"))
   :config (enable-lui-logging))

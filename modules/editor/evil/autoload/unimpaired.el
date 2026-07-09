@@ -113,17 +113,7 @@ See `+evil/next-preproc-directive' for details."
     (user-error "Must be called from a file-visiting buffer"))
   (let* ((directory (file-name-directory buffer-file-name))
          (filename (file-name-nondirectory buffer-file-name))
-         (files (cl-remove-if-not
-                 (lambda (file)
-                   (and (file-regular-p file)  ; no directories or device/special files
-                        (let ((filename (file-name-nondirectory file)))
-                          (save-match-data
-                            (not (and (bound-and-true-p flycheck-mode)
-                                      (string-match "^flycheck_\\(.+\\.el\\)$" filename)
-                                      ;; Make extra sure it's a generated file and not
-                                      ;; the actual flycheck library!
-                                      (file-exists-p (file-name-concat (file-name-directory file) (match-string 1)))))))))
-                 (doom-glob (file-name-directory buffer-file-name) "[!.]*")))
+         (files (cl-remove-if-not #'file-regular-p (doom-glob (file-name-directory buffer-file-name) "[!.]*")))
          (index (cl-position filename files :test #'file-equal-p)))
     (when (null index)
       (user-error "Couldn't find this file in current directory"))
@@ -150,7 +140,7 @@ See `+evil/next-preproc-directive' for details."
 ;;
 ;;; Encoding/Decoding
 
-;; NOTE: For [x / ]x see :lang web
+;; NOTE: For ]x / [x see :lang web
 ;; - `+web:encode-html-entities'
 ;; - `+web:decode-html-entities'
 
@@ -162,24 +152,20 @@ See `+evil/next-preproc-directive' for details."
       (delete-region beg end)
       (insert (funcall fn text)))))
 
-(defun +evil--url-decode (text)
-  "Percent-decode URL-encoded TEXT as UTF-8."
-  (decode-coding-string (url-unhex-string text t) 'utf-8))
-
-;;; [u / ]u
+;;; ]u / [u
 ;;;###autoload (autoload '+evil:url-encode "editor/evil/autoload/unimpaired" nil t)
 (evil-define-operator +evil:url-encode (_count &optional beg end)
-  "URL-encode text selected by the operator."
+  "TODO"
   (interactive "<c><r>")
   (+evil--encode beg end #'url-encode-url))
 
 ;;;###autoload (autoload '+evil:url-decode "editor/evil/autoload/unimpaired" nil t)
 (evil-define-operator +evil:url-decode (_count &optional beg end)
-  "URL-decode text selected by the operator as UTF-8."
+  "TODO"
   (interactive "<c><r>")
-  (+evil--encode beg end #'+evil--url-decode))
+  (+evil--encode beg end #'url-unhex-string))
 
-;;; [y / ]y
+;;; ]y / [y
 ;;;###autoload (autoload '+evil:c-string-encode "editor/evil/autoload/unimpaired" nil t)
 (evil-define-operator +evil:c-string-encode (_count &optional beg end)
   "TODO"

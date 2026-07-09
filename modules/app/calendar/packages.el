@@ -5,4 +5,4 @@
   (package! calfw-org)   ; part of calfw
   (package! calfw-cal)   ; part of calfw
   (package! calfw-ical)) ; part of calfw
-(package! org-gcal :pin "7304b592c283944db54ac83201d7be6f13a1f447")
+(package! org-gcal :pin "b826356a01a7484bae6245a695059a6f8d36726a")

@@ -22,8 +22,8 @@ easier to scroll through."
 (use-package! elfeed
   :commands elfeed
   :init
-  (setq elfeed-db-directory (doom-profile-data-dir t "elfeed" "db/")
-        elfeed-enclosure-default-dir (doom-profile-data-dir t "elfeed" "enclosures/"))
+  (setq elfeed-db-directory (file-name-concat doom-profile-data-dir "elfeed" "db/")
+        elfeed-enclosure-default-dir (file-name-concat doom-profile-data-dir "elfeed" "enclosures/"))
   :config
   (setq elfeed-search-filter "@2-week-ago "
         elfeed-show-entry-switch #'pop-to-buffer
@@ -60,8 +60,8 @@ easier to scroll through."
       [remap previous-buffer] #'+rss/previous))
   (when (modulep! :editor evil +everywhere)
     (evil-define-key 'normal elfeed-search-mode-map
-      "q" #'kill-current-buffer
-      "r" #'revert-buffer
+      "q" #'elfeed-kill-buffer
+      "r" #'elfeed-search-update--force
       (kbd "M-RET") #'elfeed-search-browse-url)
     (map! :map elfeed-show-mode-map
           :n "gc" nil

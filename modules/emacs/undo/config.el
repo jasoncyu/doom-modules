@@ -27,7 +27,7 @@
 (use-package! undo-fu-session
   :unless (modulep! +tree)
   :hook (undo-fu-mode . global-undo-fu-session-mode)
-  :custom (undo-fu-session-directory (doom-profile-cache-dir t "undo-fu-session/"))
+  :custom (undo-fu-session-directory (file-name-concat doom-profile-cache-dir "undo-fu-session/"))
   :config
   (setq undo-fu-session-incompatible-files '("\\.gpg$" "/COMMIT_EDITMSG\\'" "/git-rebase-todo\\'"))
 
@@ -50,6 +50,7 @@
 
 (use-package! vundo
   :unless (modulep! +tree)
+  :when (> emacs-major-version 27)
   :defer t
   :config
   (setq vundo-glyph-alist vundo-unicode-symbols
@@ -61,7 +62,7 @@
   :when (modulep! +tree)
   ;; Branching & persistent undo
   :hook (doom-first-buffer . global-undo-tree-mode)
-  :custom (undo-tree-history-directory-alist `(("." . ,(doom-profile-cache-dir t "undo-tree-hist/"))))
+  :custom (undo-tree-history-directory-alist `(("." . ,(file-name-concat doom-profile-cache-dir "undo-tree-hist/"))))
   :config
   (setq undo-tree-visualizer-diff t
         undo-tree-auto-save-history t

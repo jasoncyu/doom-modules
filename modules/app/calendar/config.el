@@ -68,7 +68,6 @@
 
   (add-hook 'calfw-calendar-mode-hook #'doom-mark-buffer-as-real-h)
   (add-hook 'calfw-calendar-mode-hook #'mode-line-invisible-mode)
-  (add-hook 'calfw-calendar-mode-hook #'doom-disable-line-numbers-h)
 
   (advice-add #'calfw-render-button :override #'+calendar-calfw-render-button-a))
 
@@ -91,5 +90,5 @@
 (use-package! org-gcal
   :defer t
   :init
-  (defvar org-gcal-dir (doom-profile-cache-dir t "org-gcal/"))
+  (defvar org-gcal-dir (file-name-concat doom-profile-cache-dir "org-gcal/"))
   (defvar org-gcal-token-file (concat org-gcal-dir "token.gpg")))

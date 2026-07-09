@@ -93,12 +93,16 @@
          (run-hooks 'org-insert-heading-hook)
          (when-let* ((todo-keyword (org-element-property :todo-keyword context))
                      (todo-type    (org-element-property :todo-type context)))
-           (org-todo
-            (cond ((eq todo-type 'done)
-                   ;; Doesn't make sense to create more "DONE" headings
-                   (car (+org-get-todo-keywords-for todo-keyword)))
-                  (todo-keyword)
-                  ('todo)))))))
+           ;; Just always default to TODO
+           (org-todo "TODO"
+                     ;; (car (+org-get-todo-keywords-for todo-keyword))
+
+            ;; (cond ((eq todo-type 'done)
+            ;;        ;; Doesn't make sense to create more "DONE" headings
+            ;;        (car (+org-get-todo-keywords-for todo-keyword)))
+            ;;       (todo-keyword)
+            ;;       ('todo))
+                     )))))
 
     (when (org-invisible-p)
       (org-show-hidden-entry))

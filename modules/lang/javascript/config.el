@@ -63,8 +63,40 @@
 
 
 (use-package! typescript-mode
+  :hook (typescript-mode . rainbow-delimiters-mode)
+  :hook (typescript-tsx-mode . rainbow-delimiters-mode)
+  :init
+  (when (modulep! :lang web)
+    (autoload 'typescript-tsx-mode "typescript-mode" nil t))
+
+  ;; REVIEW We associate TSX files with `typescript-tsx-mode' derived from
+  ;;        `web-mode' because `typescript-mode' does not officially support
+  ;;        JSX/TSX. See emacs-typescript/typescript.el#4
+  (add-to-list 'auto-mode-alist
+               (cons "\\.tsx\\'"
+                     (if (modulep! :lang web)
+                         #'typescript-tsx-mode
+                       #'typescript-mode)))
+
+  (when (modulep! :checkers syntax -flymake)
+    (after! flycheck
+      (flycheck-add-mode 'javascript-eslint 'web-mode)
+      (flycheck-add-mode 'javascript-eslint 'typescript-mode)
+      (flycheck-add-mode 'javascript-eslint 'typescript-tsx-mode)
+      (flycheck-add-mode 'typescript-tslint 'typescript-tsx-mode)
+      (unless (modulep! +lsp)
+        (after! tide
+          (flycheck-add-next-checker 'typescript-tide '(warning . javascript-eslint) 'append)
+          (flycheck-add-mode 'typescript-tide 'typescript-tsx-mode)))
+      (add-hook! 'typescript-tsx-mode-hook
+        (defun +javascript-disable-tide-checkers-h ()
+          (pushnew! flycheck-disabled-checkers
+                    'javascript-jshint
+                    'tsx-tide
+                    'jsx-tide)))))
   :unless (modulep! +tree-sitter)
   :mode "\\.ts\\'"
+  :defer t
   :config
   (+javascript-common-config 'typescript-mode))
 

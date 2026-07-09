@@ -114,7 +114,5 @@ easier."
 
 (add-hook! 'after-setting-font-hook
   (defun +bidi-init-fonts-h ()
-    (if (not (fboundp 'set-fontset-font))
-        (warn "`set-fontset-font' is missing. Emacs may be missing font support.")
-      (+bidi--set-font 'hebrew)
-      (+bidi--set-font 'arabic))))
+    (+bidi--set-font 'hebrew)
+    (+bidi--set-font 'arabic)))

@@ -71,6 +71,9 @@ If any return non-nil, `corfu-auto' will not invoke as-you-type completion."
                vterm-mode)
           t)
         corfu-cycle t
+        ;; Keep at prompt rather than first: That way if you press enter it's
+        ;; always what you typed and not
+        ;; Keep at first: Matches other editor behavior
         corfu-preselect 'prompt
         corfu-count 16
         corfu-max-width 120
@@ -156,7 +159,7 @@ See `+corfu-want-minibuffer-completion'."
         (if (featurep :system 'macos)
             0.4  ; MacOS is slower, so go easy on it
           0.24)
-        corfu-auto-prefix 2)
+        corfu-auto-prefix 1)
   (add-to-list 'corfu-auto-commands #'lispy-colon)
 
   (when (modulep! :editor evil)
@@ -174,7 +177,7 @@ See `+corfu-want-minibuffer-completion'."
 
 
 (use-package! cape
-  :defer t
+  ;; :defer t
   :init
   (add-hook! 'prog-mode-hook
     (defun +corfu-add-cape-file-h ()
@@ -182,18 +185,40 @@ See `+corfu-want-minibuffer-completion'."
   (add-hook! '(org-mode-hook markdown-mode-hook)
     (defun +corfu-add-cape-elisp-block-h ()
       (add-hook 'completion-at-point-functions #'cape-elisp-block 0 t)))
+  ;; (add-hook! '(python-mode-hook)
+  ;;   (defun +corfu-add-my-cape-dabbrev-h ()
+  ;;       ;; Use this: it respects the dabbrev regex, which is good for matching stuff like A[i][j]
+  ;;     (add-hook 'completion-at-point-functions (cape-capf-silent #'dabbrev-capf) 0 t)))
   ;; Enable Dabbrev completion basically everywhere as a fallback.
+  (defalias 'jason--dabbrev-capf (cape-capf-silent #'dabbrev-capf))
   (when (modulep! +dabbrev)
-    (setq cape-dabbrev-check-other-buffers t)
+    ;; (use-package dabbrev)
+    ;; (defun cape-dabbrev (&optional interactive)
+    ;;   (interactive (list t))
+    ;;   (if interactive
+    ;;       (call-interactively (cape-capf-interactive #'jason--dabbrev-capf)))
+    ;;   (jason--dabbrev-capf)
+    ;;   )
+    ;; (defalias #'cape-dabbrev #'jason/cape-dabbrev)
+
+    ;; Adds too much random other stuff
+    (setq cape-dabbrev-check-other-buffers nil)
+    (setq cape-dabbrev-check-all-buffers nil)
+
     ;; Set up `cape-dabbrev' options.
     (add-hook! '(prog-mode-hook
-                 text-mode-hook
+                 ;; too expensive for org-mode
+                 ;; text-mode-hook
                  conf-mode-hook
                  comint-mode-hook
                  minibuffer-setup-hook
                  eshell-mode-hook)
       (defun +corfu-add-cape-dabbrev-h ()
-        (add-hook 'completion-at-point-functions #'cape-dabbrev 20 t)))
+        ;; cannot set here
+        ;; (setq dabbrev-abbrev-char-regexp "[][[:word:]]")
+        ;; (add-hook 'completion-at-point-functions (cape-capf-silent #'dabbrev-capf) 20 t)
+        (add-hook 'completion-at-point-functions #'cape-dabbrev 20 t)
+        ))
     (after! dabbrev
       (setq dabbrev-friend-buffer-function #'+corfu-dabbrev-friend-buffer-p
             dabbrev-ignored-buffer-regexps
@@ -204,12 +229,27 @@ See `+corfu-want-minibuffer-completion'."
       (add-to-list 'dabbrev-ignored-buffer-modes 'doc-view-mode)
       (add-to-list 'dabbrev-ignored-buffer-modes 'tags-table-mode)))
 
+  (defun +corfu-cape-dabbrev-replacement (&optional interactive)
+    "Drop-in replacement for cape-dabbrev that uses dabbrev-capf instead.
+
+If INTERACTIVE is nil the function acts like a Capf. Uses dabbrev-capf
+internally which respects dabbrev regex patterns for better matching."
+    (interactive (list t))
+    (if interactive
+        (cape-interactive #'+corfu-cape-dabbrev-replacement)
+      (funcall (cape-capf-silent #'dabbrev-capf))))
+
   ;; Make these capfs composable.
   (advice-add #'lsp-completion-at-point :around #'cape-wrap-noninterruptible)
   (advice-add #'lsp-completion-at-point :around #'cape-wrap-nonexclusive)
   (advice-add #'comint-completion-at-point :around #'cape-wrap-nonexclusive)
   (advice-add #'eglot-completion-at-point :around #'cape-wrap-nonexclusive)
   (advice-add #'pcomplete-completions-at-point :around #'cape-wrap-nonexclusive)
+  ;; From the `cape' readme. Without this, Eshell autocompletion is broken on
+  ;; Emacs28.
+  (when (< emacs-major-version 29)
+    (advice-add #'pcomplete-completions-at-point :around #'cape-wrap-silent)
+    (advice-add #'pcomplete-completions-at-point :around #'cape-wrap-purify))
 
   (when (modulep! :lang latex)
     ;; Allow file completion on latex directives.
@@ -224,7 +264,12 @@ See `+corfu-want-minibuffer-completion'."
   :init
   (add-hook! 'yas-minor-mode-hook
     (defun +corfu-add-yasnippet-capf-h ()
-      (add-hook 'completion-at-point-functions #'yasnippet-capf 30 t))))
+      ;; (add-hook 'completion-at-point-functions #'yasnippet-capf -20 t)
+      (defun remove-from-list (list-var element)
+        (set list-var (delq element (symbol-value list-var))))
+      ;; Move to front
+      (remove-from-list 'completion-at-point-functions #'yasnippet-capf)
+      (add-to-list 'completion-at-point-functions #'yasnippet-capf))))
 
 (use-package! corfu-terminal
   :when (modulep! :os tty)
@@ -261,4 +306,4 @@ See `+corfu-want-minibuffer-completion'."
   (setq completion-styles '(orderless basic)
         completion-category-defaults nil
         completion-category-overrides '((file (styles orderless partial-completion)))
-        orderless-component-separator #'orderless-escapable-split))
+        orderless-component-separator #'orderless-escapable-split-on-space))

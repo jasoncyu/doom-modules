@@ -21,25 +21,23 @@ run."
   :type 'hook
   :group '+dashboard)
 
-(define-obsolete-variable-alias '+dashboard-banner-file 'fancy-splash-image "26.07")
 (defcustom +dashboard-banner-file "default.png"
   "The path to the image file to be used in on the dashboard. The path is
 relative to `+dashboard-banner-dir'. If nil, always use the ASCII banner."
   :type 'string
   :group '+dashboard)
 
-(defcustom +dashboard-banner-dir (dir! "banners/")
+(defcustom +dashboard-banner-dir (concat (dir!) "/banners/")
   "Where to look for `+dashboard-banner-file'."
   :type 'directory
   :group '+dashboard)
-(make-obsolete-variable '+dashboard-banner-dir "Set `fancy-splash-image' instead" "26.07")
 
 (defcustom +dashboard-ascii-banner-fn #'+dashboard-draw-ascii-banner-fn
   "The function used to generate the ASCII banner on Doom's dashboard."
   :type 'function
   :group '+dashboard)
 
-(defcustom +dashboard-banner-vertical-padding '(2 . 2)
+(defcustom +dashboard-banner-vertical-padding '(2 . 3)
   "Number of newlines to pad the banner with, above and below, respectively."
   :type '(cons integer integer)
   :group '+dashboard)
@@ -190,9 +188,9 @@ dashboard reloading is inhibited.")
   (setq-local mode-line-right-align-edge 'right-margin)
   ;; Ensure point is always on a button
   (add-hook 'post-command-hook #'+dashboard-reposition-point-h nil 'local)
-  ;; hl-line will highlight up to the BOL of the following line, which looks
-  ;; ugly, so exclude the newline at EOL.
-  (setq-local hl-line-range-function (lambda () (cons (pos-bol) (pos-eol))))
+  ;; hl-line produces an ugly cut-off line highlight in the dashboard, so don't
+  ;; activate it there (by pretending it's already active).
+  (setq-local hl-line-mode t)
   ;; Local variables are never important in the dashboard, and may cause repeat
   ;; prompts about unsafe/risky variables.
   (setq-local enable-local-variables nil))
@@ -201,7 +199,6 @@ dashboard reloading is inhibited.")
   [left-margin mouse-1]   #'ignore
   [remap forward-button]  #'+dashboard/forward-button
   [remap backward-button] #'+dashboard/backward-button
-  [remap push-button]     #'+dashboard/push-button
   "n"       #'forward-button
   "p"       #'backward-button
   "C-n"     #'forward-button
@@ -238,6 +235,12 @@ dashboard reloading is inhibited.")
   (unless noninteractive
     (setq doom-fallback-buffer-name +dashboard-name
           initial-buffer-choice #'doom-fallback-buffer)
+    ;; Ensure the dashboard becomes Emacs' go-to buffer when there's nothing
+    ;; else to show.
+    (unless fancy-splash-image
+      (setq fancy-splash-image
+            (expand-file-name +dashboard-banner-file
+                              +dashboard-banner-dir)))
     (+dashboard-reload)
     (add-hook 'doom-load-theme-hook #'+dashboard-reload-on-theme-change-h)
     ;; Ensure the dashboard is up-to-date whenever it is switched to or resized.
@@ -273,23 +276,22 @@ dashboard reloading is inhibited.")
 
 (defun +dashboard-reposition-point-h ()
   "Trap the point in the buttons."
-  (when (eq (current-buffer) (get-buffer +dashboard-name))
-    (when (region-active-p)
-      (setq deactivate-mark t)
-      (when (bound-and-true-p evil-local-mode)
-        (evil-change-to-previous-state)))
-    (cond ((button-at (point))
-           (forward-button 0 nil nil t))
-          ((save-restriction
-             (narrow-to-region (pos-bol) (pos-eol))
-             (forward-button 1 nil nil t)))
-          ((backward-button 1 nil nil t))
-          ((goto-char (point-min))
-           (forward-button 1 nil nil t)))
-    ;; Hide the cursor if there are no buttons
-    (unless (button-at (point))
-      (setq-local cursor-type nil
-                  evil-normal-state-cursor (list nil)))))
+  (when (region-active-p)
+    (setq deactivate-mark t)
+    (when (bound-and-true-p evil-local-mode)
+      (evil-change-to-previous-state)))
+  (or (ignore-errors
+        (if (button-at (point))
+            (forward-button 0)
+          (backward-button 1)))
+      (ignore-errors
+        (goto-char (point-min))
+        (forward-button 1)))
+  ;; Hide the cursor if there are no buttons
+  (unless (button-at (point))
+    (setq-local cursor-type nil
+                ;; We need (list nil) as a workaround for emacs-evil/evil#2016.
+                evil-normal-state-cursor (list nil))))
 
 (defun +dashboard-reload-maybe-h (&rest _)
   "Reload the dashboard or its state.
@@ -322,13 +324,8 @@ whose dimensions may not be fully initialized by the time this is run."
         window-size-change-functions)
     (when-let* ((windows (get-buffer-window-list (doom-fallback-buffer) nil t)))
       (dolist (w windows)
-        (unless (= (window-start w)
-                   (or (window-parameter w '+dashboard-last-window-start)
-                       1))
-          (set-window-start w (or (window-parameter w '+dashboard-last-window-start) 0)))
-        (when-let* ((pos (window-parameter w '+dashboard-last-position)))
-          (goto-char pos)
-          (+dashboard-reposition-point-h))
+        (unless (= (window-start w) 1)
+          (set-window-start w 0))
         (cl-destructuring-bind (left right &rest) (window-fringes w)
           (unless (and (= left 0)
                        (= right 0))
@@ -527,8 +524,9 @@ Applies line-prefix and indent-prefix text properties to respect
 
 (defun +dashboard-widget-banner ()
   "Draw text and image banner widget in the dashboard buffer."
-  (when-let* ((banner (and (functionp +dashboard-ascii-banner-fn)
-                           (funcall +dashboard-ascii-banner-fn))))
+  (when-let*
+      ((banner (and (functionp +dashboard-ascii-banner-fn)
+                    (funcall +dashboard-ascii-banner-fn))))
     (let* ((halign (cdr +dashboard-anchor))
            (width (+dashboard-maxlen banner))
            (text-prefix
@@ -541,7 +539,7 @@ Applies line-prefix and indent-prefix text properties to respect
            (bot-pad (or (cdr-safe +dashboard-banner-vertical-padding) 0))
            (beg (point)))
       (when (> top-pad 0)
-        (insert (propertize "\n" 'display `(space :height ,top-pad))))
+        (insert "\n" (propertize " " 'display `(space :height ,top-pad))))
 
       (insert banner)
       (if-let* (((stringp fancy-splash-image))
@@ -562,12 +560,8 @@ Applies line-prefix and indent-prefix text properties to respect
         (add-text-properties
          beg (point) `(line-prefix ,text-prefix indent-prefix ,text-prefix)))
 
-      ;; If the user's ASCII banner doesn't end in a newline, the last line
-      ;; could be inflated by the following display property.
-      (unless (and (bolp) (eolp)) (insert "\n"))
-
       (when (> bot-pad 0)
-        (insert (propertize "\n" 'display `(space :height ,bot-pad)))))))
+        (insert "\n" (propertize " " 'display `(space :height ,bot-pad)))))))
 
 (defun +dashboard-widget-loaded ()
   "Draw number of modules and packages loaded, and the session's startup time."
@@ -588,12 +582,15 @@ See `+dashboard-menu-sections' to change the contents of the menu."
                      (eval when t)))
         (+dashboard-insert
          (let ((icon (if (stringp icon) icon (eval icon t))))
-           (format (format " %s%%s%%10s " (if icon "%s\t" "%s"))
+           (format (format "%s%%s%%10s" (if icon "%3s\t" "%3s"))
                    (or icon "")
                    (with-temp-buffer
                      (insert-text-button
                       label
-                      'action (cmd!! action)
+                      'action
+                      `(lambda (_)
+                         (call-interactively (or (command-remapping #',action)
+                                                 #',action)))
                       'face (or face '+dashboard-menu-title)
                       'follow-link t
                       'help-echo
@@ -616,9 +613,11 @@ See `+dashboard-menu-sections' to change the contents of the menu."
                           (with-temp-buffer
                             (save-excursion (insert (key-description key)))
                             (while (re-search-forward "<\\([^>]+\\)>" nil t)
-                              (replace-match
-                               (let ((str (match-string 1)))
-                                 (upcase (substring str 0 (min (length str) 3))))))
+                              (let ((str (match-string 1)))
+                                (replace-match
+                                 (upcase (if (< (length str) 3)
+                                             str
+                                           (substring str 0 3))))))
                             (buffer-string)))
                         "")
                     'face '+dashboard-menu-desc)))
@@ -629,15 +628,11 @@ See `+dashboard-menu-sections' to change the contents of the menu."
   (+dashboard-insert
    (with-temp-buffer
      (insert (propertize " " 'display '(space . (:relative-height 2.0))) "\n")
-     (insert-text-button
-      (or (nerd-icons-codicon "nf-cod-octoface"
-                              :face '+dashboard-footer-icon
-                              :height 1.3
-                              :v-adjust -0.15)
-          (propertize "github" 'face '+dashboard-footer))
-      'action (lambda (_) (browse-url "https://github.com/doomemacs"))
-      'follow-link t
-      'help-echo "Open Doom Emacs github page")
+     (insert-text-button (or (nerd-icons-codicon "nf-cod-octoface" :face '+dashboard-footer-icon :height 1.3 :v-adjust -0.15)
+                             (propertize "github" 'face '+dashboard-footer))
+                         'action (lambda (_) (browse-url "https://github.com/doomemacs/doomemacs"))
+                         'follow-link t
+                         'help-echo "Open Doom Emacs github page")
      (insert "\n")
      (buffer-string))))
 

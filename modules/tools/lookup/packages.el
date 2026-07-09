@@ -8,7 +8,7 @@
   (package! helm))
 
 ;;
-(package! dumb-jump :pin "cf06b4ccdce6a39346c32f05139f9ee8b77ee229")
+(package! dumb-jump :pin "9ce4598e9c485821a6e639fa48854d8e05acd970")
 (when (modulep! :completion ivy)
   (package! ivy-xref :pin "a82e8e117d2dd62c28b6a3e3d6e4cfb11c0bda38"))
 (when (modulep! :completion helm)
@@ -28,7 +28,7 @@
 
 (when (modulep! +dictionary)
   (if (featurep :system 'macos)
-      (package! osx-dictionary :pin "8e6897844c4d6ff6039b31569058273632afea16")
+      (package! osx-dictionary :pin "6abfd6908b0dc773020466225c908000870b383b")
     (package! define-word :pin "31a8c67405afa99d0e25e7c86a4ee7ef84a808fe")
     ;; REVIEW: This fork fixes SavchenkoValeriy/emacs-powerthesaurus#40.
     (package! powerthesaurus

@@ -30,12 +30,6 @@
   ;; back to when killing other buffers.
   (add-hook 'mu4e-main-mode-hook #'doom-mark-buffer-as-real-h)
 
-  ;; Line numbers add nothing to mu4e's read-only views (excluding compose).
-  (add-hook! '(mu4e-main-mode-hook
-               mu4e-headers-mode-hook
-               mu4e-view-mode-hook)
-             #'doom-disable-line-numbers-h)
-
   ;; Ensures backward/forward compatibility for mu4e, which is prone to breaking
   ;; updates, and also cannot be pinned, because it's bundled with mu (which you
   ;; must install via your OS package manager).
@@ -393,8 +387,10 @@ This should already be the case yet it does not always seem to be."
 (use-package! org-msg
   :when (modulep! +org)
   :defer t
-  ;; HACK: See jwiegley/use-package#829
-  :init (after! mu4e (require 'org-msg))
+  :init
+  ;; Avoid using `:after' because it ties the :config below to when `mu4e'
+  ;; loads, rather than when `org-msg' loads.
+  (after! mu4e (require 'org-msg))
   :config
   (setq org-msg-options "html-postamble:nil H:5 num:nil ^:{} toc:nil author:nil email:nil tex:dvipng"
         org-msg-startup "hidestars indent inlineimages"
@@ -449,13 +445,11 @@ This should already be the case yet it does not always seem to be."
       (org-msg-mode (if org-msg-mode -1 1))
       (cl-callf not +mu4e-compose-org-msg-toggle-next)))
 
-  ;; HACK: Suppress `message-signature' while a draft is being prepared with
-  ;;   `org-msg-mode' active, so it doesn't get inserted alongside
-  ;;   `org-msg-signature' and produce two signatures in the buffer.
-  (defadvice! +mu4e--draft-signature-a (fn &rest args)
-    "Prevent `message-signature' from being used with `org-msg-mode'."
-    :around #'mu4e--draft
-    (let ((message-signature (unless org-msg-mode message-signature)))
+  ;; HACK: ...
+  (defadvice! +mu4e-draft-open-signature-a (fn &rest args)
+    "Prevent `mu4e-compose-signature' from being used with `org-msg-mode'."
+    :around #'mu4e-draft-open
+    (let ((mu4e-compose-signature (unless org-msg-mode mu4e-compose-signature)))
       (apply fn args)))
 
   (defvar +org-msg-accent-color "#c01c28"
@@ -627,15 +621,27 @@ See `+mu4e-msg-gmail-p' and `mu4e-sent-messages-behavior'.")
 
     (defvar +mu4e--last-invalid-gmail-action 0)
 
-    (setf (alist-get 'trash mu4e-marks)
+    (setf (alist-get 'delete mu4e-marks)
+          (list
+           :char '("D" . "✘")
+           :prompt "Delete"
+           :show-target (lambda (_target) "delete")
+           :action (lambda (docid msg target)
+                     (if (+mu4e-msg-gmail-p msg)
+                         (progn (message "The delete operation is invalid for Gmail accounts. Trashing instead.")
+                                (+mu4e--mark-seen docid msg target)
+                                (when (< 2 (- (float-time) +mu4e--last-invalid-gmail-action))
+                                  (sit-for 1))
+                                (setq +mu4e--last-invalid-gmail-action (float-time)))
+                       (mu4e--server-remove docid))))
+          (alist-get 'trash mu4e-marks)
           (list :char '("d" . "▼")
                 :prompt "dtrash"
                 :dyn-target (lambda (_target msg) (mu4e-get-trash-folder msg))
                 :action (lambda (docid msg target)
                           (if (+mu4e-msg-gmail-p msg)
                               (+mu4e--mark-seen docid msg target)
-                            (mu4e--server-move docid (mu4e--mark-check-target target)
-                                               (if mu4e-trash-without-flag "-N" "+T-N")))))
+                            (mu4e--server-move docid (mu4e--mark-check-target target) "+T-N"))))
           ;; Refile will be my "archive" function.
           (alist-get 'refile mu4e-marks)
           (list :char '("r" . "▼")

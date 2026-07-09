@@ -43,8 +43,8 @@
     (set-rotate-patterns! mode :symbols '(("#true" "#false")))
     (set-formatter! 'raco-fmt '("raco" "fmt") :modes (list mode))
 
-    (when (fboundp 'highlight-quoted-mode)
-      (add-hook mode-hook #'highlight-quoted-mode))
+    (add-hook mode-hook #'rainbow-delimiters-mode)
+    (add-hook mode-hook #'highlight-quoted-mode)
 
     (when (modulep! +lsp)
       (add-hook mode-local-vars-hook #'lsp! 'append))
@@ -53,10 +53,14 @@
       (add-hook mode-local-vars-hook #'racket-xp-mode)
       ;; Both flycheck and racket-xp produce error popups, but racket-xp's are
       ;; higher quality so disable flycheck's:
-      (when (modulep! :checkers syntax -flymake)
+      (when (modulep! :checkers syntax)
         (add-hook! 'racket-xp-mode-hook
           (defun +racket-disable-flycheck-h ()
             (cl-pushnew 'racket flycheck-disabled-checkers)))))
+
+    (unless (or (modulep! :editor parinfer)
+                (modulep! :editor lispy))
+      (add-hook mode-hook #'racket-smart-open-bracket-mode))
 
     (map! (:map racket-xp-mode-map
            [remap racket-doc]              #'racket-xp-documentation

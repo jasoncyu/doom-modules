@@ -32,6 +32,7 @@
                   "--path-separator /   --smart-case --no-heading "
                   "--with-filename --line-number --search-zip "
                   "--hidden -g !.git -g !.svn -g !.hg "
+                  "--multiline "
                   (mapconcat #'identity args " ")))
          (prompt (if (stringp prompt) (string-trim prompt) "Search"))
          (query (or query
@@ -53,7 +54,7 @@
                                              unless (string-match-p char query)
                                              return char)
                                     "%")
-                      :separator ,separator
+                      :seperator ,separator
                       :function ,function)
                     consult-async-split-style 'perlalt))
           ;; If the separator character is present *in* the query, escape them.
@@ -100,8 +101,8 @@ If ARG (universal argument), include all files, even hidden or compressed ones."
 (defun +vertico/embark-export-write ()
   "Export the current vertico results to a writable buffer if possible.
 
-Supports exporting consult-grep to wgrep, file to wdired, consult-location to
-occur-edit, and consult-xref to xref-edit-mode (Emacs 31+)."
+Supports exporting consult-grep to wgrep, file to wdired, and consult-location
+to occur-edit"
   (interactive)
   (require 'embark)
   (require 'wgrep)
@@ -112,9 +113,6 @@ occur-edit, and consult-xref to xref-edit-mode (Emacs 31+)."
               ('consult-grep #'wgrep-change-to-wgrep-mode)
               ('file #'wdired-change-to-wdired-mode)
               ('consult-location #'occur-edit-mode)
-              ('consult-xref (if (fboundp 'xref-change-to-xref-edit-mode)
-                                 #'xref-change-to-xref-edit-mode
-                               (user-error "Writable xref export requires Emacs 31+")))
               (x (user-error "embark category %S doesn't support writable export" x)))))
          (embark-after-export-hook `(,@embark-after-export-hook ,edit-command)))
     (embark-export)))
@@ -271,23 +269,12 @@ See minad/consult#770."
                     ((not (char-equal (aref pattern (max 0 (- len 2))) ?\\))))
           (cons style (substring pattern 0 -1))))))))
 
-;; Recognizes the following patterns:
-;; * .ext (file extension)
-;; * regexp$ (regexp matching at end)
 ;;;###autoload
-(defun +vertico-orderless-disambiguation-dispatch (word _index _total)
-  (let ((tofu-re
-         (if (boundp 'consult--tofu-regexp)
-             (concat consult--tofu-regexp "*\\'")
-           "\\'")))
-    (cond
-     ;; Ensure that $ works with Consult commands, which add disambiguation suffixes
-     ((string-suffix-p "$" word)
-      `(orderless-regexp . ,(concat (substring word 0 -1) tofu-re)))
-     ;; File extensions
-     ((and (or minibuffer-completing-file-name
-               (derived-mode-p 'eshell-mode))
-           (string-match-p "\\`\\.." word))
-      `(orderless-regexp . ,(concat "\\." (substring word 1) tofu-re))))))
+(defun +vertico-orderless-disambiguation-dispatch (pattern _index _total)
+  "Ensure $ works with Consult commands, which add disambiguation suffixes."
+  (let ((len (length pattern)))
+    (when (and (> len 0)
+               (char-equal (aref pattern (1- len)) ?$))
+      `(orderless-regexp . ,(concat (substring pattern 0 -1) "[\x200000-\x300000]*$")))))
 
 ;;; vertico.el ends here

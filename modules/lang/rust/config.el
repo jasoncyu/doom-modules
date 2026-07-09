@@ -41,6 +41,7 @@
     (add-to-list 'org-src-lang-modes '("rust" . rustic)))
 
   :config
+  (add-hook 'rustic-mode-hook #'rainbow-delimiters-mode)
   (set-docsets! 'rustic-mode "Rust")
   (set-popup-rule! "^\\*rustic-compilation" :vslot -1)
   (set-popup-rule! "^\\*cargo-run" :vslot -1)

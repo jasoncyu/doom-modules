@@ -13,4 +13,4 @@
   (package! treemacs-persp))
 (when (and (modulep! +lsp)
            (modulep! :tools lsp -eglot))
-  (package! lsp-treemacs :pin "3519ac907ea391e18d9599375b116aeeb6f8a38a"))
+  (package! lsp-treemacs :pin "49df7292c521b4bac058985ceeaf006607b497dd"))

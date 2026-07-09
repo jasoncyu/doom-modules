@@ -8,6 +8,7 @@
       (add-hook (intern (format "%s-local-vars-hook" mode)) #'lsp! 'append)
     (set-company-backend! mode 'company-graphql))
 
+  (add-hook 'graphql-mode-hook #'rainbow-delimiters-mode)
   (set-docsets! mode :add "GraphQL Specification")
   (set-electric! mode :words '("or" "and"))
   (set-ligatures! mode

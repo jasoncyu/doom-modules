@@ -2,21 +2,20 @@
 ;;; tools/llm/packages.el
 
 (package! gptel
-  :recipe (:nonrecursive t)
-  :pin "ebf0f3d8e9932e0ac6de82542220864cc17f6784")
+  :recipe (:host github :repo "jasoncyu/gptel" :nonrecursive t))
 
 (package! gptel-quick
   :recipe (:host github :repo "karthink/gptel-quick")
-  :pin "36fe296e016449433fa1213f4b89cb8dc7d4db5e")
+  :pin "018ff2be8f860a1e8fe3966eec418ad635620c38")
 
 (when (modulep! :tools magit)
   (package! gptel-magit
     ;; REVIEW: Revert to upstream if ragnard/gptel-magit#7 is merged.
     :recipe (:host github
              :repo "ArthurHeymans/gptel-magit")
-    :pin "7af14bd1af6375e5eb5955554fd569e5adfecfcd"))
+    :pin "4a40c3fc201d60d2f0589c2e1a6693fd94bb4c98"))
 
 (when (modulep! :lang org)
   (package! ob-gptel
     :recipe (:host github :repo "jwiegley/ob-gptel")
-    :pin "71584eb30e8317cf36104cec78b6d53c4433cae7"))
+    :pin "cbed018a7d81de9ba8dc3220e1c4d10b7bb29b11"))

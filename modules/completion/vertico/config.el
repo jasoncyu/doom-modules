@@ -29,7 +29,8 @@ overrides `completion-styles' during company completion sessions.")
                   (car args))
           (cdr args)))
   :config
-  (setq vertico-resize nil
+  ;; allowing shrinking flickers when candidates count decrease
+  (setq vertico-resize 'grow-only
         vertico-count 17
         vertico-cycle t)
 
@@ -128,8 +129,9 @@ orderless."
         consult-line-numbers-widen t
         consult-async-min-input 2
         consult-async-refresh-delay  0.15
-        consult-async-input-throttle 0.2
-        consult-async-input-debounce 0.1
+        ;; higher values helps avoid exiting the posframe for search
+        consult-async-input-throttle 0.5
+        consult-async-input-debounce 0.2
         consult-fd-args
         '((if (executable-find "fdfind" 'remote) "fdfind" "fd")
           "--color=never"
@@ -150,7 +152,7 @@ orderless."
      +default/search-cwd +default/search-other-cwd
      +default/search-notes-for-symbol-at-point
      +default/search-emacsd
-     :preview-key "C-SPC"))
+     :preview-key 'any))
   (consult-customize
    consult-theme
    :preview-key '("C-SPC" :debounce 0.5 any))
@@ -306,7 +308,7 @@ orderless."
     "u" #'doom/help-package-homepage)
   (setf (alist-get 'package embark-keymap-alist) #'+vertico-embark-doom-package-map)
   (map! (:map embark-file-map
-         :desc "Open target with sudo"         "S"   #'doom/sudo-find-file
+         :desc "Open target with sudo"         "s"   #'doom/sudo-find-file
          (:when (modulep! :tools magit)
            :desc "Open magit-status of target" "g"   #'+vertico/embark-magit-status)
          (:when (modulep! :ui workspaces)
@@ -326,7 +328,23 @@ orderless."
     (add-to-list 'marginalia-command-categories cat))
 
   (when (modulep! +icons)
-    (add-hook 'marginalia-mode-hook #'nerd-icons-completion-marginalia-setup)))
+    (add-hook 'marginalia-mode-hook #'nerd-icons-completion-marginalia-setup))
+
+  ;; HACK: Use `doom-project-root' (insert of `project-root') without
+  ;;   circumventing marginalia's project root cache.
+  (defadvice! +vertico--marginalia-project-root-a (&rest _)
+    :override #'marginalia--project-root
+    (marginalia--in-minibuffer
+      (when (eq marginalia--project-root 'unset)
+        (setq marginalia--project-root
+              (or (let ((prompt (minibuffer-prompt))
+                        case-fold-search)
+                    (and (string-match
+                          "\\`\\(?:Dired\\|Find file\\) in \\(.*\\): \\'"
+                          prompt)
+                         (match-string 1 prompt)))
+                  (doom-project-root))))
+      marginalia--project-root)))
 
 
 (use-package! wgrep
@@ -336,7 +354,12 @@ orderless."
 
 (use-package! vertico-posframe
   :when (modulep! +childframe)
-  :hook (vertico-mode . vertico-posframe-mode))
+  :hook (vertico-mode . vertico-posframe-mode)
+  :config
+  (setq vertico-posframe-width 160)
+  ;; (setq vertico-posframe-poshandler #'posframe-poshandler-frame-center)
+  ;; Fix keys exiting SPC s p search frame
+  (setq resize-mini-frames 'grow-only))
 
 
 ;; From https://github.com/minad/vertico/wiki#candidate-display-transformations-custom-candidate-highlighting
@@ -378,4 +401,10 @@ orderless."
                  (+vertico-transform-functions . +vertico-highlight-directory-fn)))
   (add-to-list 'vertico-multiform-commands
                '(execute-extended-command
-                 (+vertico-transform-functions . +vertico-highlight-enabled-mode-fn))))
+                 (+vertico-transform-functions . +vertico-highlight-enabled-mode-fn)))
+  (add-to-list 'vertico-multiform-commands
+               '(org-set-effort
+                (vertico-sort-function . vertico-sort-alpha)))
+  (add-to-list 'vertico-multiform-commands
+               '(jason--clock-in-hook
+                (vertico-sort-function . vertico-sort-alpha))))

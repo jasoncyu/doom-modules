@@ -71,7 +71,7 @@ The following vim plugins have been ported to evil:
 | vim-lion              | evil-lion                      | omap [[kbd:][gl]] / [[kbd:][gL]]                   |
 | vim-seek or vim-sneak | evil-snipe                     | mmap [[kbd:][s]] / [[kbd:][S]], omap [[kbd:][z]] / [[kbd:][Z]] & [[kbd:][x]] / [[kbd:][X]] |
 | vim-surround          | evil-embrace and evil-surround | vmap [[kbd:][S]], omap [[kbd:][ys]]                |
-| vim-unimpaired        | (provided by Doom)             | [[https://github.com/doomemacs/modules/blob/master/modules/editor/evil/config.el#L413-L460][see the list]]                   |
+| vim-unimpaired        | (provided by Doom)             | [[https://github.com/doomemacs/doomemacs/blob/master/modules/editor/evil/config.el#L413-L460][see the list]]                   |
 
 This module has also ported vim-unimpaired keybinds to Emacs.
 
@@ -174,8 +174,8 @@ both cases the universal argument has been moved to [[kbd:][<leader> u]].
 To undo this, use:
 #+begin_src emacs-lisp
 ;; add to $DOOMDIR/config.el
-(setopt evil-want-C-u-scroll nil
-        evil-want-C-u-delete nil)
+(setq! evil-want-C-u-scroll nil
+       evil-want-C-u-delete nil)
 #+end_src
 
 ** The [[kbd:][s]]/[[kbd:][S]] keys behave differently from Vim
@@ -198,7 +198,7 @@ because it was redundant with [[kbd:][yy]], which is easier to type than [[kbd:]
 If you prefer the old behavior, it can be reversed with:
 #+begin_src emacs-lisp
 ;; add to $DOOMDIR/config.el
-(setopt evil-want-Y-yank-to-eol nil)
+(setq! evil-want-Y-yank-to-eol nil)
 #+end_src
 
 * Frequently asked questions

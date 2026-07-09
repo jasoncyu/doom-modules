@@ -155,11 +155,11 @@ if it's callable, `apropos' otherwise."
 ;;; Commands
 
 ;;;###autoload
-(defun +emacs-lisp/change-working-buffer (buffer)
+(defun +emacs-lisp/change-working-buffer (buffer &optional all-buffers)
   "Change what buffer `+emacs-lisp-eval-fn' executes code in.
 
-If passed the prefix arg, the prompted buffer list will include all buffers (if
-don't have the workspaces module enabled, there's no difference).
+If ALL-BUFFERS? (the prefix arg), the prompted buffer list will include all
+buffers (if don't have the workspaces module enabled, there's no difference).
 
 This only affects the buffer-local value of `+emacs-lisp-working-buffer'. If
 BUFFER is nil or the focused buffer, unsets `+emacs-lisp-working-buffer's local
@@ -167,10 +167,11 @@ value."
   (interactive
    (list (read-buffer
           "Set working buffer to: " (list (current-buffer))
-          nil (when current-prefix-arg
+          nil (unless all-buffers
                 (let ((buffers (mapcar #'buffer-name (doom-buffer-list))))
                   (lambda (b)
-                    (member (or (car-safe b) b) buffers)))))))
+                    (member (or (car-safe b) b) buffers)))))
+         current-prefix-arg))
   (let ((buffer (if buffer (get-buffer buffer))))
     (cond ((or (null buffer)
                (equal buffer (current-buffer)))
@@ -287,7 +288,7 @@ selected before this command was invoked."
                      (and (stringp file-base)
                           (equal (symbol-name (doom-unquote (nth 1 (read (current-buffer)))))
                                  file-base)))))))
-         (not (doom-config-locate 'module default-directory)))))
+         (not (locate-dominating-file default-directory ".doommodule")))))
 
 (defvar-local +emacs-lisp-reduced-flymake-byte-compile--process nil)
 
@@ -323,15 +324,10 @@ as `+emacs-lisp-non-package-mode' will enable it and disable the other checkers.
                         "-Q"
                         "--batch"
                         ,@(mapcan (lambda (p) (list "-L" p)) elisp-flymake-byte-compile-load-path)
-                        ;; Appease the byte-compiler by loading Doom
-                        "-L" ,doom-core-dir
-                        "--eval" ,(prin1-to-string
-                                   `(let ((gc-cons-threshold most-positive-fixnum)
-                                          (gc-cons-percentage 1.0))
-                                      (require 'doom)
-                                      (doom-initialize ,(doom-profile->id doom-profile))
-                                      (setq byte-compile-warnings ',+emacs-lisp-linter-warnings)
-                                      (startup--load-user-init-file nil)))
+                        ;; this is what silences the byte compiler
+                        "--eval" ,(prin1-to-string `(setq doom-modules ',doom-modules
+                                                          doom-disabled-packages ',doom-disabled-packages
+                                                          byte-compile-warnings ',+emacs-lisp-linter-warnings))
                         "-f" "elisp-flymake--batch-compile-for-flymake"
                         ,tmp-file)
              :stderr "*stderr of +elisp-flymake-byte-compile-out*"
@@ -358,7 +354,7 @@ as `+emacs-lisp-non-package-mode' will enable it and disable the other checkers.
 
 (define-minor-mode +emacs-lisp--flymake-non-package-mode
   ""
-  :since "23.10"
+  :since "2.1.0"
   (if +emacs-lisp--flymake-non-package-mode
       (progn
         (remove-hook! 'flymake-diagnostic-functions :local #'elisp-flymake-checkdoc #'elisp-flymake-byte-compile)
@@ -368,7 +364,7 @@ as `+emacs-lisp-non-package-mode' will enable it and disable the other checkers.
 
 (define-minor-mode +emacs-lisp--flycheck-non-package-mode
   ""
-  :since "23.10"
+  :since "2.1.0"
   (if (not +emacs-lisp--flycheck-non-package-mode)
       (when (get 'flycheck-disabled-checkers 'initial-value)
         (setq-local flycheck-disabled-checkers (get 'flycheck-disabled-checkers 'initial-value))
@@ -377,24 +373,24 @@ as `+emacs-lisp-non-package-mode' will enable it and disable the other checkers.
       flycheck-disabled-checkers)
     (setq-local flycheck-emacs-lisp-check-form
                 (prin1-to-string
-                 `(let ((enable-local-eval nil)
-                        (enable-local-variables :safe))
-                    (setq no-native-compile t)
+                 `(progn
+                    (setq doom-modules ',doom-modules
+                          doom-disabled-packages ',doom-disabled-packages
+                          byte-compile-warnings ',+emacs-lisp-linter-warnings)
                     (condition-case e
-                        (let ((gc-cons-threshold most-positive-fixnum)
-                              (gc-cons-percentage 1.0))
+                        (progn
                           (require 'doom)
-                          (doom-initialize ,(doom-profile->id doom-profile))
-                          (setq byte-compile-warnings ',+emacs-lisp-linter-warnings)
-                          (startup--load-user-init-file nil))
+                          (require 'doom-cli)
+                          (doom-initialize t)
+                          (doom-startup))
                       (error
                        (princ
-                        (format "%s:%d:%d:Error:Failed to load Doom: %S\n"
+                        (format "%s:%d:%d:Error:Failed to load Doom: %s\n"
                                 (or ,(ignore-errors
                                        (file-name-nondirectory
                                         (buffer-file-name (buffer-base-buffer))))
                                     (car command-line-args-left))
-                                0 0 e))))
+                                0 0 (error-message-string e)))))
                     ,(read (default-toplevel-value 'flycheck-emacs-lisp-check-form))))
                 flycheck-disabled-checkers
                 (cons 'emacs-lisp-checkdoc
@@ -409,11 +405,11 @@ Essentially, this means in any elisp file that either:
 - Is not a theme in `custom-theme-load-path',
 - Lacks a `provide' statement,
 - Lives in a project with a .doommodule file,
-- Is a dotfile (like .dir-locals.el or .doom).
+- Is a dotfile (like .dir-locals.el or .doomrc).
 
 This generally applies to your private config (`doom-user-dir') or Doom's source
 \(`doom-emacs-dir')."
-  :since "22.10"
+  :since "2.1.0"
   (unless (and (or (bound-and-true-p flycheck-mode)
                    (bound-and-true-p flymake-mode))
                (derived-mode-p 'emacs-lisp-mode)

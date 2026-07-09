@@ -14,6 +14,7 @@
 
 ;;;###package lisp-mode
 (defvar inferior-lisp-program "sbcl")
+(add-hook 'lisp-mode-hook #'rainbow-delimiters-mode)
 
 
 (use-package! sly
@@ -43,22 +44,13 @@
   (add-hook! 'after-init-hook (after! sly (sly-setup)))
 
   :config
-  (setq sly-mrepl-history-file-name (doom-profile-cache-dir t "sly-mrepl-history")
+  (setq sly-mrepl-history-file-name (file-name-concat doom-profile-cache-dir "sly-mrepl-history")
         sly-kill-without-query-p t
         sly-net-coding-system 'utf-8-unix
         ;; Doom defaults to non-fuzzy search, because it is faster and more
         ;; precise (but requires more keystrokes). Change this to
         ;; `sly-flex-completions' for fuzzy completion
         sly-complete-symbol-function 'sly-simple-completions)
-
-  ;; HACK: When there are no completion matches, all candidates are displayed.
-  ;;   Very disruptive for users with idle completion on.
-  ;; REVIEW: Remove when joaotavora/sly#705 is resolved.
-  (defadvice! +common-lisp--suppress-all-completions-on-empty-prefix-a (fn prefix)
-    :around #'sly-simple-completions
-    (if (equal prefix "")
-        (list nil "")
-      (funcall fn prefix)))
 
   (set-popup-rules!
     '(("^\\*sly-mrepl"       :vslot 2 :size 0.3 :quit nil :ttl nil)

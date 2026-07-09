@@ -1,4 +1,4 @@
-;;; app/everywhere/cli.el -*- lexical-binding: t; no-byte-compile: t -*-
+;;; app/everywhere/cli.el -*- lexical-binding: t; -*-
 
 (defcli! () ()
   "Spawn an emacsclient window for quick edits."

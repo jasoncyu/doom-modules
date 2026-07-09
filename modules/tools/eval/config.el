@@ -48,9 +48,7 @@ buffer rather than an overlay on the line at point or the minibuffer."
              (set-process-query-on-exit-flag process nil)
              (kill-process process)
              (kill-buffer buf))))
-  :size 0.25
-  :quit nil
-  :select t)
+  :size 0.25 :quit nil)
 
 
 (after! quickrun

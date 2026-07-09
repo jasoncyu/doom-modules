@@ -1,5 +1,7 @@
 ;;; lang/org/config.el -*- lexical-binding: t; -*-
 
+(declare-function org/mark-done-from-last-clock "org-jason")
+
 (defvar +org-babel-native-async-langs '(python)
   "Languages that will use `ob-comint' instead of `ob-async' for `:async'.")
 
@@ -64,7 +66,7 @@ Is relative to `org-directory', unless it is absolute. Is used in Doom's default
 (defvar +org-habit-graph-window-ratio 0.3
   "The ratio of the consistency graphs relative to the window width.")
 
-(defvar +org-preview-dir (doom-profile-cache-dir t "org/previews/")
+(defvar +org-preview-dir (doom-path doom-profile-cache-dir "org/previews/")
   "Where link preview images are cached.")
 
 (defvar +org-startup-with-animated-gifs nil
@@ -101,7 +103,7 @@ Is relative to `org-directory', unless it is absolute. Is used in Doom's default
    org-agenda-start-day "-3d"
    ;; Optimize `org-agenda' by inhibiting extra work while opening agenda
    ;; buffers in the background. They'll be "restarted" if the user switches to
-   ;; them anyway (see `+org--optimize-backgrounded-agenda-buffers-a')
+   ;; them anyway (see `+org-exclude-agenda-buffers-from-workspace-h')
    org-agenda-inhibit-startup t))
 
 
@@ -413,6 +415,14 @@ I like:
       (when (bound-and-true-p org-capture-is-refiling)
         (save-buffer))))
 
+  ;; HACK: Doom doesn't support `customize'. Best not to advertise it as an
+  ;;   option in `org-capture's menu.
+  (defadvice! +org--remove-customize-option-a (fn table title &optional prompt specials)
+    :around #'org-mks
+    (funcall fn table title prompt
+             (remove '("C" "Customize org-capture-templates")
+                     specials)))
+
   (defadvice! +org--capture-expand-variable-file-a (file)
     "If a variable is used for a file path in `org-capture-template', it is used
 as is, and expanded relative to `default-directory'. This changes it to be
@@ -496,7 +506,7 @@ relative to `org-directory', unless it is an absolute path."
                     ("duckduckgo"  . "https://duckduckgo.com/?q=%s")
                     ("wikipedia"   . "https://en.wikipedia.org/wiki/%s")
                     ("wolfram"     . "https://wolframalpha.com/input/?i=%s")
-                    ("doom-repo"   . "https://github.com/doomemacs/core/%s")
+                    ("doom-repo"   . "https://github.com/doomemacs/doomemacs/%s")
                     ("emacsdir"    . ,(doom-path doom-emacs-dir "%s"))
                     ("doomdir"     . ,(doom-path doom-user-dir "%s"))))
     (add-to-list 'org-link-abbrev-alist abbrev))
@@ -504,7 +514,7 @@ relative to `org-directory', unless it is an absolute path."
   (+org-define-basic-link "org" 'org-directory)
   (+org-define-basic-link "doom" 'doom-emacs-dir)
   (+org-define-basic-link "doom-docs" 'doom-docs-dir)
-  ;; FIXME: (+org-define-basic-link "doom-modules" 'doom-modules-dir)
+  (+org-define-basic-link "doom-modules" 'doom-modules-dir)
 
   ;; Add "lookup" links for packages and keystrings; useful for Emacs
   ;; documentation -- especially Doom's!
@@ -562,7 +572,7 @@ relative to `org-directory', unless it is an absolute path."
      :follow (lambda (link)
                (let ((link (+org-link-read-desc-at-point link))
                      (url "https://github.com")
-                     (doom-repo "doomemacs/core"))
+                     (doom-repo "doomemacs/doomemacs"))
                  (save-match-data
                    (browse-url
                     (cond ((string-match "^\\([^/]+\\(?:/[^/]+\\)?\\)?#\\([0-9]+\\(?:#.*\\)?\\)" link)
@@ -649,7 +659,8 @@ mutating hooks on exported output, like formatters."
              (let ((init-file ,old-async-init-file))
                (if init-file
                    (load init-file nil t)
-                 (load ,early-init-file nil t)))
+                 (load ,early-init-file nil t)
+                 (require 'doom-start)))
            (delete-file load-file-name))))
       (apply fn args))))
 
@@ -721,7 +732,6 @@ via an indirect buffer."
         (+org--restart-mode-h))))
 
   (defvar recentf-exclude)
-  (defvar so-long-target-modes)
   (defadvice! +org--optimize-backgrounded-agenda-buffers-a (fn file)
     "Disable `org-mode's startup processes for temporary agenda buffers.
 
@@ -773,22 +783,31 @@ between the two."
 
   (add-hook 'doom-delete-backward-functions
             #'+org-delete-backward-char-and-realign-table-maybe-h)
+  (defun jason/smart-clock-in ()
+    "Clock in with C-u C-u C-u prefix if last clock-out was within 3 minutes, otherwise clock in normally."
+    (interactive)
+    (let ((three-minutes-ago (time-subtract (current-time) (seconds-to-time (* 3 60)))))
+      (if (and org-clock-out-time (time-less-p three-minutes-ago org-clock-out-time))
+          (org-clock-in '(64))  ; C-u C-u C-u prefix arg
+        (org-clock-in))))
 
   (map! :map org-mode-map
+        [remap org-clock-in]        #'jason/smart-clock-in
         "C-c C-S-l"  #'+org/remove-link
         "C-c <C-i>"  #'org-link-preview-refresh
         ;; textmate-esque newline insertion
         "S-RET"      #'+org/shift-return
         "C-RET"      #'+org/insert-item-below
         "C-S-RET"    #'+org/insert-item-above
-        "C-M-RET"    #'org-insert-subheading
+        "C-M-RET"    (cmd!! #'org-insert-todo-subheading '(4))
         [C-return]   #'+org/insert-item-below
         [C-S-return] #'+org/insert-item-above
-        [C-M-return] #'org-insert-subheading
+        [C-M-return] (cmd!! #'org-insert-todo-subheading '(4))
         (:when (featurep :system 'macos)
          [s-return]   #'+org/insert-item-below
          [s-S-return] #'+org/insert-item-above
-         [s-M-return] #'org-insert-subheading)
+         ;; 4: forces TODO rather than keep prv subheading keyword
+         [s-M-return] (cmd!! #'org-insert-subheading '(4)))
         ;; Org-aware C-a/C-e
         [remap doom/backward-to-bol-or-indent]          #'org-beginning-of-line
         [remap doom/forward-to-last-non-comment-or-eol] #'org-end-of-line
@@ -822,7 +841,9 @@ between the two."
         "o" #'org-set-property
         "q" #'org-set-tags-command
         "t" #'org-todo
-        "T" #'org-todo-list
+        "T" #'org/mark-done-from-last-clock
+        ;; Creates agenda view of todos, not that useful
+        ;; "T" #'org-todo-list
         "x" #'org-toggle-checkbox
         (:prefix ("a" . "attachments")
          "a" #'org-attach
@@ -907,6 +928,7 @@ between the two."
         (:prefix ("l" . "links")
          "c" #'org-cliplink
          "d" #'+org/remove-link
+         "D" #'+org/delete-link-and-file
          "i" #'org-id-store-link
          "l" #'org-insert-link
          "L" #'org-insert-all-links
@@ -930,7 +952,9 @@ between the two."
          "o" #'+org/refile-to-other-window
          "O" #'+org/refile-to-other-buffer
          "v" #'+org/refile-to-visible
-         "r" #'org-refile
+         "p" #'org-ql/refile-to-project
+         ;; "r" #'org-refile
+         "r" #'org-ql/refile-to-anything
          "R" #'org-refile-reverse) ; to all `org-refile-targets'
         (:prefix ("s" . "tree/subtree")
          "a" #'org-toggle-archive-tag
@@ -942,6 +966,7 @@ between the two."
          "k" #'org-move-subtree-up
          "l" #'org-demote-subtree
          "n" #'org-narrow-to-subtree
+         "p" #'org-paste-subtree
          "r" #'org-refile
          "s" #'org-sparse-tree
          "A" #'org-archive-subtree-default
@@ -1026,7 +1051,7 @@ between the two."
 (use-package! org-clock ; built-in
   :commands org-clock-save
   :init
-  (setq org-clock-persist-file (doom-profile-data-dir t "org-clock-save.el"))
+  (setq org-clock-persist-file (file-name-concat doom-profile-data-dir "org-clock-save.el"))
   (defadvice! +org--clock-load-a (&rest _)
     "Lazy load org-clock until its commands are used."
     :before '(org-clock-in
@@ -1179,9 +1204,9 @@ between the two."
   (defvar org-attach-id-dir nil)
   (defvar org-babel-python-command nil)
 
-  (setq org-persist-directory (doom-profile-cache-dir t "org" "persist/")
-        org-publish-timestamp-directory (doom-profile-cache-dir t "org" "timestamps/")
-        org-preview-latex-image-directory (doom-profile-cache-dir t "org" "latex/")
+  (setq org-persist-directory (file-name-concat doom-profile-cache-dir "org" "persist/")
+        org-publish-timestamp-directory (file-name-concat doom-profile-cache-dir "org" "timestamps/")
+        org-preview-latex-image-directory (file-name-concat doom-profile-cache-dir "org" "latex/")
         ;; Recognize a), A), a., A., etc -- must be set before org is loaded.
         org-list-allow-alphabetical t)
 

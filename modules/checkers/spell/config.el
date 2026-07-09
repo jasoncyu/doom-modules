@@ -74,10 +74,6 @@
     (use-package! spell-fu
       :when (executable-find "aspell")
       :hook (text-mode . spell-fu-mode)
-      :commands (spell-fu-word-add
-                 spell-fu-word-remove
-                 spell-fu-goto-next-error
-                 spell-fu-goto-previous-error)
       :general ([remap ispell-word] #'+spell/correct)
       :preface
       (defvar +spell-correct-interface
@@ -135,7 +131,7 @@
               font-lock-variable-name-face)))
         "Faces in certain major modes that spell-fu will not spellcheck.")
 
-      (setq spell-fu-directory (doom-profile-data-dir t "spell-fu"))
+      (setq spell-fu-directory (file-name-concat doom-profile-data-dir "spell-fu"))
       (when (modulep! +everywhere)
         (add-hook! '(yaml-mode-hook
                      conf-mode-hook

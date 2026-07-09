@@ -1,6 +1,6 @@
 ;;; editor/word-wrap/config.el -*- lexical-binding: t; -*-
 
-(defcustom +word-wrap-extra-indent 0
+(defcustom +word-wrap-extra-indent 'double
   "The amount of extra indentation for wrapped code lines.
 
 When \\='double, indent by twice the major-mode indentation.
@@ -50,10 +50,4 @@ will not be affected."
 
 (when (memq 'visual-line-mode text-mode-hook)
   (remove-hook 'text-mode-hook #'visual-line-mode)
-  (add-hook 'text-mode-hook #'+word-wrap-mode 'append))
-
-;; REVIEW: PR this upstream! Except visual-fill-column isn't maintained, so it
-;;   likely won't happen.
-(after! visual-fill-column
-  (add-hook 'visual-fill-column-mode-hook #'+word-wrap-adapt-to-line-numbers-h)
-  (add-hook 'display-line-numbers-mode-hook #'+word-wrap-adapt-to-line-numbers-h))
+  (add-hook 'text-mode-hook #'+word-wrap-mode))

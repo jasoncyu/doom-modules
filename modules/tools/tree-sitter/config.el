@@ -101,7 +101,7 @@
   :config
   ;; HACK: Keep $EMACSDIR clean by installing grammars to central location (the
   ;;   active profile).
-  (let ((data-dir (doom-profile-data-dir t "tree-sitter")))
+  (let ((data-dir (file-name-concat doom-profile-data-dir "tree-sitter")))
     (add-to-list 'treesit-extra-load-path data-dir)
     ;; Treesit's API saw major changes in 30.x.
     (if (< emacs-major-version 30)
@@ -118,9 +118,7 @@
                  (bibtex "https://github.com/latex-lsp/tree-sitter-bibtex" nil nil nil nil)
                  (blueprint "https://github.com/huanie/tree-sitter-blueprint" nil nil nil nil)
                  (commonlisp "https://github.com/tree-sitter-grammars/tree-sitter-commonlisp" nil nil nil nil)
-                 (latex "https://github.com/latex-lsp/tree-sitter-latex" nil nil nil
-                        ;; Pinned due to latex-lsp/tree-sitter-latex#172
-                        "a6c812704b3d3e1541b0853aa0d6d561301320e1")
+                 (latex "https://github.com/latex-lsp/tree-sitter-latex" nil nil nil nil)
                  (make "https://github.com/tree-sitter-grammars/tree-sitter-make" nil nil nil nil)
                  (nu "https://github.com/nushell/tree-sitter-nu" nil nil nil nil)
                  (org "https://github.com/milisims/tree-sitter-org" nil nil nil nil)
@@ -131,7 +129,7 @@
                  (surface "https://github.com/connorlay/tree-sitter-surface" nil nil nil nil)
                  (toml "https://github.com/tree-sitter/tree-sitter-toml" nil nil nil nil)
                  (typst "https://github.com/uben0/tree-sitter-typst" "master" "src" nil nil)
-                 (systemverilog "https://github.com/gmlarumbe/tree-sitter-systemverilog" nil nil nil nil)
+                 (verilog "https://github.com/gmlarumbe/tree-sitter-systemverilog" nil nil nil nil)
                  (vhdl "https://github.com/alemuller/tree-sitter-vhdl" nil nil nil nil)
                  (vue "https://github.com/tree-sitter-grammars/tree-sitter-vue" nil nil nil nil)
                  (wast "https://github.com/wasm-lsp/tree-sitter-wasm" nil "wast/src" nil nil)
@@ -143,9 +141,16 @@
 ;; TODO: combobulate or evil-textobj-tree-sitter
 
 
-;; (use-package! combobulate
-;;   :commands combobulate-query-builder
-;;   :hook (prog-mode . combobulate-mode))
+(use-package! combobulate
+  :commands combobulate-query-builder
+  :hook (prog-mode . combobulate-mode)
+  :config
+  ;; combobulate-highlight installs treesit queries using #match (old predicate
+  ;; syntax) which raises treesit-query-error in Emacs 31, aborting
+  ;; font-lock-default-fontify-region before keyword passes (rainbow-identifiers)
+  ;; run.
+  (setq combobulate-highlight-context nil)
+  (advice-add #'combobulate-highlight-install :override #'ignore))
 
 
 ;; (use-package! evil-textobj-tree-sitter

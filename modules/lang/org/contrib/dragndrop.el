@@ -20,9 +20,12 @@
       :preview #'+org-link-preview-attachment-fn
       :requires 'org-download))
   :config
+  (setq org-download-method 'directory)
+  (setq-default org-download-heading-lvl nil)
+  (setq-default org-download-image-dir (file-truename "~/icloud/org-download"))
   (unless org-download-image-dir
     (setq org-download-image-dir org-attach-id-dir))
-  (setq org-download-method 'attach
+  (setq ;; org-download-method 'attach
         org-download-timestamp "_%Y%m%d_%H%M%S"
         org-download-screenshot-method
         (cond ((featurep :system 'macos) "screencapture -i %s")
@@ -32,7 +35,7 @@
                      ((executable-find "gnome-screenshot") "gnome-screenshot -a -f %s"))))
 
         org-download-heading-lvl nil
-        org-download-link-format "[[download:%s]]\n"
+        ;; org-download-link-format "[[download:%s]]\n"
         org-download-annotate-function (lambda (_link) "")
         org-download-link-format-function
         (lambda (filename)

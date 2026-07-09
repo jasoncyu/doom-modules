@@ -106,8 +106,7 @@ to update the notmuch-saved-searches variable accordingly."
   (add-hook! '(notmuch-show-mode-hook
                notmuch-tree-mode-hook
                notmuch-search-mode-hook)
-             #'mode-line-invisible-mode
-             #'doom-disable-line-numbers-h)
+             #'mode-line-invisible-mode)
 
   (map! :localleader
         :map (notmuch-hello-mode-map notmuch-search-mode-map notmuch-tree-mode-map notmuch-show-mode-map)

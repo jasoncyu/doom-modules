@@ -16,6 +16,7 @@
     "C-a"    #'move-beginning-of-line
     "C-r"    #'evil-paste-from-register
     "C-u"    #'evil-delete-back-to-indentation
+    "C-v"    #'yank
     "C-w"    #'doom/delete-backward-word
     "C-z"    (cmd! (ignore-errors (call-interactively #'undo))))
 
@@ -228,7 +229,8 @@
        (:after ivy
         :map ivy-minibuffer-map
         "C-SPC" #'ivy-call-and-recenter  ; preview file
-        "C-l"   #'ivy-alt-done)
+        "C-l"   #'ivy-alt-done
+        "C-v"   #'yank)
        (:after counsel
         :map counsel-ag-map
         "C-SPC"    #'ivy-call-and-recenter ; preview
@@ -461,7 +463,7 @@
        :desc "Format buffer/region"                  "f"   #'+format/region-or-buffer
        :desc "Find implementations"                  "i"   #'+lookup/implementations
        :desc "Jump to documentation"                 "k"   #'+lookup/documentation
-       :desc "Send buffer/region to repl"            "s"   #'+eval/buffer-or-region-in-repl
+       :desc "Send to repl"                          "s"   #'+eval/send-region-to-repl
        :desc "Find type definition"                  "t"   #'+lookup/type-definition
        :desc "Delete trailing whitespace"            "w"   #'delete-trailing-whitespace
        :desc "Delete trailing newlines"              "W"   #'doom/delete-trailing-newlines
@@ -522,14 +524,15 @@
       ;;; <leader> g --- git/version control
       (:prefix-map ("g" . "git")
        :desc "Revert file"                 "R"   #'vc-revert
-       :desc "Copy link to remote"         "y"   #'+vc/git-link-kill
-       :desc "Copy link to homepage"       "Y"   #'+vc/git-link-kill-homepage
+       :desc "Copy link to remote"         "y"   #'+vc/browse-at-remote-kill
+       :desc "Copy link to homepage"       "Y"   #'+vc/browse-at-remote-kill-homepage
        :desc "Git time machine"            "t"   #'git-timemachine-toggle
        (:when (modulep! :ui vc-gutter)
         :desc "Revert hunk at point"      "r"   #'+vc-gutter/save-and-revert-hunk
         :desc "Stage hunk at point"       "s"   #'+vc-gutter/stage-hunk
         :desc "Jump to next hunk"         "]"   #'+vc-gutter/next-hunk
         :desc "Jump to previous hunk"     "["   #'+vc-gutter/previous-hunk)
+        :desc "show hunk" "*" #'diff-hl-show-hunk
        (:when (modulep! :tools magit)
         :desc "Magit dispatch"            "/"   #'magit-dispatch
         :desc "Magit file dispatch"       "."   #'magit-file-dispatch
@@ -551,8 +554,8 @@
          :desc "Find issue"                "i"   #'forge-visit-issue
          :desc "Find pull request"         "p"   #'forge-visit-pullreq)
         (:prefix ("o" . "open in browser")
-         :desc "Browse file or region"     "o"   #'+vc/git-link
-         :desc "Browse homepage"           "h"   #'+vc/git-link-homepage
+         :desc "Browse file or region"     "o"   #'+vc/browse-at-remote
+         :desc "Browse homepage"           "h"   #'+vc/browse-at-remote-homepage
          :desc "Browse remote"             "r"   #'forge-browse-remote
          :desc "Browse commit"             "c"   #'forge-browse-commit
          :desc "Browse an issue"           "i"   #'forge-browse-issue
@@ -578,12 +581,13 @@
 
       ;;; <leader> i --- insert
       (:prefix-map ("i" . "insert")
-       :desc "Emoji"                         "e"   #'emoji-search
+       (:when (> emacs-major-version 28)
+         :desc "Emoji"                       "e"   #'emoji-search)
        (:when (modulep! :ui emoji)
          :desc "Emoji"                       "e"   #'emojify-insert-emoji)
        :desc "Current file name"             "f"   #'+default/insert-file-path
        :desc "Current file path"             "F"   (cmd!! #'+default/insert-file-path t)
-       :desc "Evil ex path"                  "p"   (cmd! (evil-ex "r!echo "))
+       :desc "Evil ex path"                  "p"   (cmd! (evil-ex "R!echo "))
        :desc "From evil register"            "r"   #'evil-show-registers
        :desc "Snippet"                       "s"   #'yas-insert-snippet
        :desc "Unicode"                       "u"   #'insert-char
@@ -697,9 +701,6 @@
         :desc "Open directory in dirvish"    "/" #'dirvish
         :desc "Project sidebar"              "p" #'dirvish-side
         :desc "Find file in project sidebar" "P" #'+dired/dirvish-side-and-follow)
-       (:when (modulep! :term ghostel)
-        :desc "Toggle ghostel popup"  "t" #'+ghostel/toggle
-        :desc "Open ghostel here"     "T" #'+ghostel/here)
        (:when (modulep! :term shell)
         :desc "Toggle shell popup"    "t" #'+shell/toggle
         :desc "Open shell here"       "T" #'+shell/here)
@@ -709,12 +710,16 @@
        (:when (modulep! :term vterm)
         :desc "Toggle vterm popup"    "t" #'+vterm/toggle
         :desc "Open vterm here"       "T" #'+vterm/here)
+       (:when (modulep! :term ghostel)
+        :desc "Toggle ghostel popup"  "t" #'+ghostel/toggle
+        :desc "Open ghostel here"     "T" #'+ghostel/here)
        (:when (modulep! :term eshell)
         :desc "Toggle eshell popup"   "e" #'+eshell/toggle
         :desc "Open eshell here"      "E" #'+eshell/here)
        (:when (modulep! :os macos)
-        :desc "Reveal in Finder"           "o" #'+macos/reveal-in-finder
-        :desc "Reveal project in Finder"   "O" #'+macos/reveal-project-in-finder
+         :desc "Open in app"                "o" #'+macos/open-current-file-in-app
+         :desc "Reveal in Finder"           "f" #'+macos/reveal-in-finder
+         :desc "Reveal project in Finder"   "F" #'+macos/reveal-project-in-finder
         (:prefix ("s" . "send to application")
          :desc "Send to Transmit"           "t" #'+macos/send-to-transmit
          :desc "Send project to Transmit"   "T" #'+macos/send-project-to-transmit
@@ -763,6 +768,9 @@
        :desc "Kill project buffers"         "k" #'projectile-kill-buffers
        :desc "Find sibling file"            "o" #'find-sibling-file
        :desc "Switch project"               "p" #'projectile-switch-project
+       ;; (:when (modulep! :jason main)
+       ;;   :desc "jason main projectile" "p" #'consult-projectile-switch-project
+       ;;   )
        :desc "Find recent project files"    "r" #'projectile-recentf
        :desc "Run project"                  "R" #'projectile-run-project
        :desc "Save project files"           "s" #'projectile-save-project-buffers

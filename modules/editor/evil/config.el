@@ -59,7 +59,7 @@ directives. By default, this only recognizes C directives."
         evil-undo-system
         (cond ((modulep! :emacs undo +tree) 'undo-tree)
               ((modulep! :emacs undo) 'undo-fu)
-              ('undo-redo)))
+              ((> emacs-major-version 27) 'undo-redo)))
 
   ;; Fix #7141
   (defadvice! +evil--persist-state-a (fn &rest args)
@@ -261,7 +261,6 @@ directives. By default, this only recognizes C directives."
   (defvar +evil-collection-disabled-list
     '(anaconda-mode
       company
-      eglot
       elisp-mode
       ert
       lispy)
@@ -269,6 +268,7 @@ directives. By default, this only recognizes C directives."
 
 The defaults disable modules that we have our own keybinds for or that (IMO)
 don't offer any/enough real value to users.")
+  (defvar evil-collection-repl-submit-state 'insert)
   (defvar evil-collection-company-use-tng (modulep! :completion company +tng))
   (defvar evil-collection-setup-minibuffer nil)
   (defvar evil-collection-want-unimpaired-p nil)  ; we have our own
@@ -283,23 +283,13 @@ don't offer any/enough real value to users.")
         (cl-callf2 delete elt evil-collection-mode-list)
       (cl-callf2 delq sym evil-collection-mode-list)))
 
-  (setq evil-collection-binding-overrides
-        `((repl-submit :enabled nil)
-          (repl-newline :enabled nil)
-          (pop-definition :enabled nil)
-          (find-file :enabled nil)
-          ,@(when (modulep! :tools lookup)
-              '((find-definition :enabled nil)
-                (find-usages :enabled nil)
-                (lookup-doc :enabled nil)))
-          ,@(when (modulep! :tools eval)
-              '((goto-repl :enabled nil))))
-        evil-collection-key-blacklist
-        (append (list doom-leader-key
-                      doom-localleader-key
+  (setq evil-collection-key-blacklist
+        (append (list doom-leader-key doom-localleader-key
                       doom-leader-alt-key)
                 evil-collection-key-blacklist
-                '("gz" "<escape>")))
+                (if (modulep! :tools lookup) '("gd" "gf" "K"))
+                (if (modulep! :tools eval) '("gr" "gR"))
+                '("[" "]" "gz" "<escape>")))
 
   (defadvice! +evil-collection-disable-blacklist-a (fn)
     :around #'evil-collection-vterm-toggle-send-escape  ; allow binding to ESC
@@ -331,11 +321,7 @@ don't offer any/enough real value to users.")
   (evilem-make-motion evilem-motion-backward-word-begin #'evil-backward-word-begin :scope 'visible)
   (evilem-make-motion evilem-motion-backward-WORD-begin #'evil-backward-WORD-begin :scope 'visible)
   (evilem-make-motion evilem-motion-backward-word-end #'evil-backward-word-end :scope 'visible)
-  (evilem-make-motion evilem-motion-backward-WORD-end #'evil-backward-WORD-end :scope 'visible)
-
-  (after! which-key
-    (cl-pushnew `(("g s" . "evilem--?motion-\\(.*\\)") nil . "EM \\1")
-                which-key-replacement-alist)))
+  (evilem-make-motion evilem-motion-backward-WORD-end #'evil-backward-WORD-end :scope 'visible))
 
 
 (use-package! evil-embrace
@@ -501,10 +487,17 @@ don't offer any/enough real value to users.")
       ;; implement dictionary keybinds
       ;; evil already defines 'z=' to `ispell-word' = correct word at point
       (:when (modulep! :checkers spell)
-       :n  "zg"   #'+spell/add-word
-       :n  "zw"   #'+spell/remove-word
-       :m  "[s"   #'+spell/previous-error
-       :m  "]s"   #'+spell/next-error)
+        :n  "zg"   #'+spell/add-word
+        :n  "zw"   #'+spell/remove-word
+        :m  "[s"   #'+spell/previous-error
+        :m  "]s"   #'+spell/next-error
+        )
+      ;; * Replace with jinx
+      :n  "z="   #'jinx-correct
+      ;; :n  "zg"   #'+spell/add-word
+      ;; :n  "zw"   #'+spell/remove-word
+      :m  "[s"   #'jinx-previous
+      :m  "]s"   #'jinx-next
 
       ;; ported from vim-unimpaired
       :n  "] SPC" #'+evil/insert-newline-below
@@ -513,13 +506,13 @@ don't offer any/enough real value to users.")
       :n  "[b"    #'previous-buffer
       :n  "]f"    #'+evil/next-file
       :n  "[f"    #'+evil/previous-file
-      :m  "[u"    #'+evil:url-encode
-      :m  "]u"    #'+evil:url-decode
-      :m  "[y"    #'+evil:c-string-encode
-      :m  "]y"    #'+evil:c-string-decode
+      :m  "]u"    #'+evil:url-encode
+      :m  "[u"    #'+evil:url-decode
+      :m  "]y"    #'+evil:c-string-encode
+      :m  "[y"    #'+evil:c-string-decode
       (:when (modulep! :lang web)
-       :m "[x"   #'+web:encode-html-entities
-       :m "]x"   #'+web:decode-html-entities)
+       :m "]x"   #'+web:encode-html-entities
+       :m "[x"   #'+web:decode-html-entities)
       (:when (modulep! :ui vc-gutter)
        :m "]d"   #'+vc-gutter/next-hunk
        :m "[d"   #'+vc-gutter/previous-hunk)
@@ -573,7 +566,7 @@ don't offer any/enough real value to users.")
        :nv "gf"  #'+lookup/file
        :nv "gI"  #'+lookup/implementations)
       (:when (modulep! :tools eval)
-       :nv "gr"  #'+eval:region
+       :nv "gr"  #'+eval/line-or-region
        :n  "gR"  #'+eval/buffer
        :v  "gR"  #'+eval:replace-region
        ;; Restore these keybinds, since the blacklisted/overwritten gr/gR will
@@ -591,7 +584,11 @@ don't offer any/enough real value to users.")
        (:after elfeed
         :map elfeed-search-mode-map
         :n "gr" #'elfeed-search-update--force
-        :n "gR" #'elfeed-search-fetch))
+        :n "gR" #'elfeed-search-fetch)
+       (:after eglot
+        :map eglot-mode-map
+        :nv "gd" #'+lookup/definition
+        :nv "gD" #'+lookup/references))
 
       ;; custom evil keybinds
       :nv "zn"    #'+evil:narrow-buffer
@@ -680,6 +677,8 @@ don't offer any/enough real value to users.")
 
       ;; Emulation of Vim's omni-completion keybinds
       (:unless evil-disable-insert-state-bindings
+        ;; Handy for inserting quickly
+        :i "C-y" #'consult-yasnippet
         (:prefix "C-x"
           (:when (modulep! :completion company)
            :i "C-l"  #'+company/whole-lines
@@ -699,5 +698,5 @@ don't offer any/enough real value to users.")
            :i "s"    #'cape-dict
            :i "C-s"  #'yasnippet-capf
            :i "C-o"  #'completion-at-point
-           :i "C-n"  #'cape-dabbrev
+           :i "C-n"  #'+corfu-cape-dabbrev-replacement
            :i "C-p"  #'+corfu/dabbrev-this-buffer))))

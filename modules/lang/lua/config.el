@@ -55,6 +55,7 @@
 (use-package! fennel-mode
   :when (modulep! +fennel)
   :mode "\\.fenneldoc\\'"
+  :hook (fennel-mode . rainbow-delimiters-mode)
   :config
   (set-lookup-handlers! 'fennel-mode
     :definition #'fennel-find-definition

@@ -124,9 +124,7 @@
           (eshell-mode))
         (when command
           (+eshell-run-command command eshell-buffer)))
-      (prog1 (pop-to-buffer eshell-buffer)
-        (when-let* ((win (get-buffer-window eshell-buffer)))
-          (set-window-dedicated-p win t))))))
+      (pop-to-buffer eshell-buffer))))
 
 ;;;###autoload
 (defun +eshell/here (&optional command)
