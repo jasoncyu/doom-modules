@@ -1,8 +1,5 @@
 ;;; tools/eval/autoload/repl.el -*- lexical-binding: t; -*-
 
-(defvar evil-move-cursor-back)
-
-
 ;;
 ;;; Variables
 
@@ -157,7 +154,7 @@ mode."
               ;;   they have their own `comint-send-input' wrapper, so to be
               ;;   safe, I simply emulate the keypress.
               (if (bound-and-true-p evil-local-mode)
-                  (let (evil-move-cursor-back)
+                  (dlet (evil-move-cursor-back)
                     (evil-save-state
                       (evil-append-line 1)
                       (call-interactively (doom-lookup-key (kbd "RET")))))
@@ -178,7 +175,7 @@ If ARG (universal argument), prompt for a specific REPL to open."
    (list (or (unless current-prefix-arg
                (assq major-mode +eval-repl-handler-alist))
              (+eval-repl-select "Open REPL in this window: "))
-         (doom-region)))
+         (doom-region t)))
   (+eval--repl-open spec #'switch-to-buffer input))
 
 ;;;###autoload
@@ -190,7 +187,7 @@ If ARG (universal argument), prompt for a specific REPL to open."
    (list (or (unless current-prefix-arg
                (assq major-mode +eval-repl-handler-alist))
              (+eval-repl-select "Open REPL in popup: "))
-         (doom-region)))
+         (doom-region t)))
   (+eval--repl-open spec #'pop-to-buffer input))
 
 ;;;###autoload

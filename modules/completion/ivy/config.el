@@ -46,7 +46,7 @@ results buffer.")
     [remap persp-switch-to-buffer]        #'+ivy/switch-workspace-buffer
     [remap evil-show-jumps]               #'+ivy/jump-list)
 
-  ;; Fix #4886: otherwise our remaps are overwritten
+  ;; Fix doomemacs/core#4886: otherwise our remaps are overwritten
   (setq ivy-mode-map (make-sparse-keymap))
   :config
   ;; The default sorter is much to slow and the default for `ivy-sort-max-size'
@@ -213,9 +213,8 @@ counsel-rg to discard the rest of the output to display an error.
 This advice suppresses the error code, so you can still operate on whatever
 workable results ripgrep produces, despite the error."
     :around #'counsel-rg
-    (letf! (defun process-exit-status (proc)
-             (let ((code (funcall process-exit-status proc)))
-               (if (= code 2) 0 code)))
+    (letf! (defadvice process-exit-status (:filter-return (code))
+             (if (= code 2) 0 code))
       (apply fn args)))
 
   ;; Decorate `doom/help-custom-variable' results the same way as

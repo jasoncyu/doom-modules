@@ -1,4 +1,6 @@
 ;;; lang/org/autoload/org-export.el -*- lexical-binding: t; -*-
+;;; Commentary:
+;;; Code:
 
 (defun +org--yank-html-buffer (buffer)
   (with-current-buffer buffer
@@ -19,7 +21,7 @@
 
 
 ;;
-;;; Commands
+;;; * Commands
 
 ;;;###autoload
 (defun +org/export-to-clipboard (backend)
@@ -50,5 +52,7 @@ properties and font-locking et all)."
     (_
      ;; Omit after/before-string overlay properties in htmlized regions, so we
      ;; don't get fringe characters for things like flycheck or diff-hl
-     (letf! (defun htmlize-add-before-after-strings (_beg _end text) text)
+     (letf! (defun! htmlize-add-before-after-strings (_beg _end text) text)
        (ox-clip-formatted-copy beg end)))))
+
+;;; org-export.el ends here

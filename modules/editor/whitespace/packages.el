@@ -2,7 +2,7 @@
 ;;; editor/whitespace/packages.el
 
 (when (modulep! +guess)
-  (package! dtrt-indent :pin "7c372bec8d84c247e4bd0d5599024d66ee300429"))
+  (package! dtrt-indent :pin "8402da6bcc288709366e0b589fa79e744e877788"))
 
 (when (modulep! +trim)
   (package! ws-butler

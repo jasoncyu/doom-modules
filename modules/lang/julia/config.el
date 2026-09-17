@@ -48,8 +48,7 @@
   :when (modulep! +tree-sitter)
   :defer t
   :init
-  (set-tree-sitter! 'julia-mode 'julia-ts-mode
-    '((julia :url "https://github.com/tree-sitter/tree-sitter-julia")))
+  (set-tree-sitter! 'julia-mode 'julia-ts-mode 'julia)
   :config
   (when (modulep! +lsp)
     (add-hook 'julia-ts-mode-local-vars-hook #'lsp! 'append)))
@@ -127,19 +126,19 @@
 
   (setq-default julia-snail-multimedia-enable t)
 
-  (map! (:localleader
-         (:map (julia-snail-mode-map)
-               "'" #'julia-snail
-               "a" #'julia-snail-package-activate
-               "r" #'julia-snail-update-module-cache
-               "d" #'julia-snail-doc-lookup
-               (:prefix ("e" . "eval")
-                        "b" #'julia-snail-send-buffer-file
-                        "l" #'julia-snail-send-line
-                        "r" #'julia-snail-send-region
-                        "e" #'julia-snail-send-dwim))
-         (:map (julia-snail-repl-mode-map)
-               "a" #'julia-snail-package-activate
-               "d" #'julia-snail-doc-lookup
-               "m" #'julia-snail-repl-go-back
-               "r" #'julia-snail-update-module-cache))))
+  (map! :localleader
+        (:map julia-snail-mode-map
+         "'" #'julia-snail
+         "a" #'julia-snail-package-activate
+         "r" #'julia-snail-update-module-cache
+         "d" #'julia-snail-doc-lookup
+         (:prefix ("e" . "eval")
+          "b" #'julia-snail-send-buffer-file
+          "l" #'julia-snail-send-line
+          "r" #'julia-snail-send-region
+          "e" #'julia-snail-send-dwim))
+        (:map julia-snail-repl-mode-map
+         "a" #'julia-snail-package-activate
+         "d" #'julia-snail-doc-lookup
+         "m" #'julia-snail-repl-go-back
+         "r" #'julia-snail-update-module-cache)))

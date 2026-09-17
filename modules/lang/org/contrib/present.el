@@ -22,8 +22,9 @@ headings as titles, and you have more freedom to place them wherever you like.")
 (use-package! org-re-reveal
   :after ox
   :config
-  (setq org-re-reveal-root (concat "file://" (expand-file-name "../../" (locate-library "dist/reveal.js" t)))
-        org-re-reveal-revealjs-version "4"))
+  (setq org-re-reveal-root
+        (concat "file://" (expand-file-name
+                           "../../" (locate-library "dist/reveal.js" t)))))
 
 
 (use-package! org-tree-slide
@@ -49,7 +50,7 @@ headings as titles, and you have more freedom to place them wherever you like.")
   (defadvice! +org-present--hide-first-heading-maybe-a (fn &rest args)
     "Omit the first heading if `+org-present-hide-first-heading' is non-nil."
     :around #'org-tree-slide--display-tree-with-narrow
-    (letf! (defun org-narrow-to-subtree ()
+    (letf! (defun! org-narrow-to-subtree ()
              (save-excursion
                (save-match-data
                  (org-with-limited-levels

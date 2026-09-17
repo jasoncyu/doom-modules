@@ -1,7 +1,8 @@
 ;;; lang/fsharp/config.el -*- lexical-binding: t; -*-
 
 (defun +fsharp-common-config (mode)
-  (set-formatter! 'fantomas '("fantomas" "--stdin") :modes (list mode))
+  (set-formatter! 'fantomas '("fantomas" "--out" filepath filepath)
+    :modes (list mode))
   (when (modulep! +lsp)
     (add-hook (intern (format "%s-local-vars-hook" mode)) #'lsp! 'append)))
 
@@ -38,9 +39,6 @@
   :when (modulep! +tree-sitter)
   :defer t
   :init
-  (set-tree-sitter! 'fsharp-mode 'fsharp-ts-mode
-    `((fsharp :url "https://github.com/ionide/tree-sitter-fsharp"
-              :rev ,(if (< (treesit-library-abi-version) 15) "v0.1.0" "v0.2.0")
-              :commit "594c500ecace8618db32dd1144307897277db067")))
+  (set-tree-sitter! 'fsharp-mode 'fsharp-ts-mode 'fsharp)
   :config
   (+fsharp-common-config 'fsharp-ts-mode))

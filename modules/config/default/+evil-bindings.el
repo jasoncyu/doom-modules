@@ -77,8 +77,8 @@
            ,@(when (modulep! :editor fold)
                '(((save-excursion (end-of-line) (invisible-p (point)))
                   #'+fold/toggle)))
-           ;; Fixes #4548: without this, this tab keybind overrides
-           ;; mode-local ones for modes that don't have an evil
+           ;; Fixes doomemacs/core#4548: without this, this tab keybind
+           ;; overrides mode-local ones for modes that don't have an evil
            ;; keybinding scheme or users who don't have :editor (evil
            ;; +everywhere) enabled.
            ((or (doom-lookup-key
@@ -691,16 +691,16 @@
        :desc "REPL"               "r"  #'+eval/open-repl-other-window
        :desc "REPL (same window)" "R"  #'+eval/open-repl-same-window
        :desc "Dired"              "-"  #'dired-jump
+       (:when (modulep! :emacs dired +dirvish)
+        :desc "Open directory in dirvish"    "/" #'dirvish
+        :desc "Project sidebar"              "p" #'dirvish-side
+        :desc "Find file in project sidebar" "P" #'+dired/dirvish-side-and-follow)
        (:when (modulep! :ui neotree)
         :desc "Project sidebar"              "p" #'+neotree/open
         :desc "Find file in project sidebar" "P" #'+neotree/find-this-file)
        (:when (modulep! :ui treemacs)
         :desc "Project sidebar" "p" #'+treemacs/toggle
         :desc "Find file in project sidebar" "P" #'treemacs-find-file)
-       (:when (modulep! :emacs dired +dirvish)
-        :desc "Open directory in dirvish"    "/" #'dirvish
-        :desc "Project sidebar"              "p" #'dirvish-side
-        :desc "Find file in project sidebar" "P" #'+dired/dirvish-side-and-follow)
        (:when (modulep! :term shell)
         :desc "Toggle shell popup"    "t" #'+shell/toggle
         :desc "Open shell here"       "T" #'+shell/here)
@@ -880,9 +880,3 @@
        (:when (modulep! :ui zen)
         :desc "Zen mode"                   "z" #'+zen/toggle
         :desc "Zen mode (fullscreen)"      "Z" #'+zen/toggle-fullscreen)))
-
-(after! which-key
-  (let ((prefix-re (regexp-opt (list doom-leader-key doom-leader-alt-key))))
-    (cl-pushnew `((,(format "\\`\\(?:C-w\\|%s w\\) m\\'" prefix-re))
-                  nil . "maximize")
-                which-key-replacement-alist)))

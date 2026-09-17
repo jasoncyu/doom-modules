@@ -49,23 +49,22 @@ easier to scroll through."
   ;; Large images are annoying to scroll through, because scrolling follows the
   ;; cursor, so we force shr to insert images in slices.
   (when +rss-enable-sliced-images
-    (setq-hook! 'elfeed-show-mode-hook
-      shr-put-image-function #'+rss-put-sliced-image-fn
-      shr-external-rendering-functions '((img . +rss-render-image-tag-without-underline-fn))))
+    (if (< emacs-major-version 31)
+        ;; DEPRECATED: Remove when 30.x support is dropped
+        (setq-hook! 'elfeed-show-mode-hook
+          shr-put-image-function #'+rss-put-sliced-image-fn
+          shr-external-rendering-functions '((img . +rss-render-image-tag-without-underline-fn))))
+    ;; Make shr's auto-slicing of large images more aggressive
+    (setq shr-sliced-image-height 0.3))  ; default: 0.9
 
-  ;; Keybindings
-  (after! elfeed-show
-    (define-key! elfeed-show-mode-map
-      [remap next-buffer]     #'+rss/next
-      [remap previous-buffer] #'+rss/previous))
-  (when (modulep! :editor evil +everywhere)
-    (evil-define-key 'normal elfeed-search-mode-map
-      "q" #'elfeed-kill-buffer
-      "r" #'elfeed-search-update--force
-      (kbd "M-RET") #'elfeed-search-browse-url)
-    (map! :map elfeed-show-mode-map
-          :n "gc" nil
-          :n "gc" #'+rss/copy-link))
+  (map! :when (modulep! :editor evil +everywhere)
+        (:map elfeed-search-mode-map
+         :n "q" #'kill-current-buffer
+         :n "r" #'revert-buffer
+         :n "M-RET" #'elfeed-search-browse-url)
+        (:map elfeed-show-mode-map
+         :n "gc" nil
+         :n "gc" #'+rss/copy-link))
 
   ;; HACK: Fix visual-line mode (evil) selecting +1 line when executing
   ;;   elfeed-search operations on selected entries.
@@ -76,7 +75,7 @@ easier to scroll through."
              (let ((end (region-end)))
                (and (> end (region-beginning))
                     (save-excursion (goto-char end) (bolp)))))
-        (letf! (defun region-end () (1- (funcall region-end)))
+        (letf! (defadvice region-end (:filter-return (value)) (1- value))
           (funcall fn ignore-region-p))
       (funcall fn ignore-region-p))))
 
@@ -96,12 +95,6 @@ easier to scroll through."
         (dolist (file (cl-remove-if #'file-exists-p files))
           (message "elfeed-org: ignoring %S because it can't be read" file))
         (setq rmh-elfeed-org-files (cl-remove-if-not #'file-exists-p files))))))
-
-
-(use-package! elfeed-goodies
-  :after elfeed
-  :config
-  (elfeed-goodies/setup))
 
 
 (use-package! elfeed-tube

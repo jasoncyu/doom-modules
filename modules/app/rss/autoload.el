@@ -125,13 +125,13 @@
 (defun +rss-dead-feeds (&optional years)
   "Return a list of feeds that haven't posted anything in YEARS."
   (let* ((years (or years 1.0))
-         (living-feeds (make-hash-table :test 'equal))
+         (living-feeds (make-hash-table :test 'eq))
          (seconds (* years 365.0 24 60 60))
          (threshold (- (float-time) seconds)))
     (with-elfeed-db-visit (entry feed)
       (let ((date (elfeed-entry-date entry)))
         (when (> date threshold)
-          (setf (gethash (elfeed-feed-url feed) living-feeds) t))))
+          (puthash (elfeed-entry-feed feed) living-feeds t))))
     (cl-loop for url in (elfeed-feed-list)
              unless (gethash url living-feeds)
              collect url)))
@@ -139,7 +139,7 @@
 ;;;###autoload
 (defun +rss-put-sliced-image-fn (spec alt &optional flags)
   "TODO"
-  (letf! (defun insert-image (image &optional alt _area _slice)
+  (letf! (defun! insert-image (image &optional alt _area _slice)
            (let ((height (cdr (image-size image t))))
              (insert-sliced-image image alt nil (max 1 (/ height 20.0)) 1)))
     (shr-put-image spec alt flags)))

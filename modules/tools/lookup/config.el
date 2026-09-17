@@ -15,9 +15,8 @@
 ;; `dumb-jump' to find what you want.
 
 (defvar +lookup-provider-url-alist
-  (append '(("Google"            +lookup--online-backend-google "https://google.com/search?q=%s")
-            ("Doom issues"       "https://github.com/orgs/doomemacs/projects/2/views/30?filterQuery=%s")
-            ("Doom discourse"    "https://discourse.doomemacs.org/search?q=%s")
+  (append '(("Doom issues"       "https://github.com/orgs/doomemacs/projects/2/views/30?filterQuery=%s")
+            ("Google"            +lookup--online-backend-google "https://google.com/search?q=%s")
             ("Google images"     "https://www.google.com/images?q=%s")
             ("Google maps"       "https://maps.google.com/maps?q=%s")
             ("Kagi"              "https://kagi.com/search?q=%s")
@@ -42,7 +41,7 @@
   "An alist that maps online resources to either:
 
   1. A search url (needs on '%s' to substitute with an url encoded query),
-  2. A non-interactive function that returns the search url in #1,
+  2. A non-interactive function that returns the search url in no.1,
   3. An interactive command that does its own search for that provider.
 
 Used by `+lookup/online'.")
@@ -168,8 +167,8 @@ Dictionary.app behind the scenes to get definitions.")
     (setq xref-show-definitions-function #'ivy-xref-show-defs
           xref-show-xrefs-function       #'ivy-xref-show-xrefs)
 
-    ;; HACK: Fix #4386: `ivy-xref-show-xrefs' calls `fetcher' twice, which has
-    ;;   side effects that breaks in some cases (i.e. on
+    ;; HACK: Fix doomemacs/core#4386: `ivy-xref-show-xrefs' calls `fetcher'
+    ;;   twice, which has side effects that breaks in some cases (i.e. on
     ;;   `dired-do-find-regexp').
     (defadvice! +lookup--fix-ivy-xrefs (fn fetcher alist)
       :around #'ivy-xref-show-xrefs

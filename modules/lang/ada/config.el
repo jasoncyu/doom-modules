@@ -13,7 +13,9 @@
         :localleader
         :desc "Build Alire Project" "b" #'+ada/alr-build
         :desc "Run Alire Project"   "r" #'+ada/alr-run
-        :desc "Clean Alire Project" "c" #'+ada/alr-clean))
+        :desc "Clean Alire Project" "c" #'+ada/alr-clean
+        :desc "Run gnatprove"       "p" #'+ada/alr-prove
+        :desc "Run Alire Tests"     "t" #'+ada/alr-test))
 
 
 (defun +gpr-common-config (mode)
@@ -35,8 +37,7 @@
   :when (modulep! +tree-sitter)
   :defer t
   :init
-  (set-tree-sitter! 'ada-mode 'ada-ts-mode
-    '((ada :url "https://github.com/briot/tree-sitter-ada")))
+  (set-tree-sitter! 'ada-mode 'ada-ts-mode 'ada)
   :config
   (+ada-common-config 'ada-ts-mode)
 
@@ -65,7 +66,6 @@
   :when (modulep! +tree-sitter)
   :defer t
   :init
-  (set-tree-sitter! 'gpr-mode 'gpr-ts-mode
-    '((gpr :url "https://github.com/brownts/tree-sitter-gpr")))
+  (set-tree-sitter! 'gpr-mode 'gpr-ts-mode 'gpr)
   :config
   (+gpr-common-config 'gpr-ts-mode))

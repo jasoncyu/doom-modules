@@ -8,20 +8,14 @@
 ;;   of only pinning primary packages, but an exception is made because the
 ;;   Magit ecosystem seems prone to breakage.
 
-(package! transient :pin "43cbef8539e3c7398d0280958b42f94dac7ea7b4") ; 0.13.2
-(package! cond-let :pin "28d3b039a9c1f27ecfea36a7df4c37a3b90e4687") ; 1.0.0
+(package! transient :pin "0ec75dcce235f5ab3d39a02b878e6aaa78159b22") ; 0.13.7
+(package! cond-let :pin "c48600dfab6372670225f046cace263700c78eab")  ; 1.1.3
 
-(package! magit :pin "c800f79c2061621fde847f6a53129eca0e8da728") ; 4.5.0
+(package! magit :pin "67f203853e74e926e2c99f60ed508840714f7ced")     ; 4.7.0
 (when (modulep! +forge)
-  (package! closql :pin "947426d0c93e5ad5374c464b2f121c36cdaf2132") ; 2.4.0
-  (package! forge
-    :pin "d4eb8d1be55398e350c8a68b0c355f5166418843" ; 0.6.5
-    ;; forge depends on ghub, which requires Emacs 29.1+
-    :disable (version< emacs-version "29.1"))
-  (package! ghub
-    :pin "c438abc865964554d0ee0b2d1a7def60de47a224" ; 5.2.0
-    ;; ghub requires Emacs 29.1+
-    :disable (version< emacs-version "29.1"))
+  (package! closql :pin "d382e7427f5d375ffc872851b049e9f9c4a43dfc")  ; 2.4.1
+  (package! forge :pin "29f45d8f247079a1d8d2247efdacb5b50a3b1e51")   ; 0.6.8
+  (package! ghub :pin "cba5666d8b999e2733aefac369a4e0def3be7fc9")    ; 5.3.0
   (package! code-review
     :recipe (:host github
              :repo "doomelpa/code-review"
@@ -31,6 +25,6 @@
     :disable (version< emacs-version "29.1")))
 
 (when (modulep! :lang org)
-  (package! orgit :pin "4fb91faff3bf32dac5f6f932654c280cd1f190f7") ; v2.1.2
+  (package! orgit :pin "c948819a7cad37a654ada275ebf7c003abf782d0") ; v2.2.1
   (when (modulep! :tools magit +forge)
-    (package! orgit-forge :pin "8e4496d7f7f84fab3e36d10883386c02f43a67e7"))) ; v1.1.2
+    (package! orgit-forge :pin "87f257ba03c634198a634f0bdafc1b9cf6c6d09a"))) ; v1.1.4

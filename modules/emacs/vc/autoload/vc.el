@@ -1,23 +1,64 @@
 ;;; emacs/vc/autoload/vc.el -*- lexical-binding: t; -*-
+;;; Commentary:
+;;; Code:
+
+;;
+;;; * Hacks
+
+;; REVIEW: PR this upstream
+;;;###autoload
+(defun +vc--git-link-use-full-magit-rev-a (fn &rest args)
+  "Expand 7-char commit hashes grabbed in magit contexts to their 40-char form.
+
+This makes it consistent with hashes produced from git-timemachine and
+`git-link--last-commit'."
+  (defvar magit-buffer-revision)
+  (letf! ((defun rev-parse (rev)
+            (when rev
+              (if (= 40 (string-width rev))
+                  rev (magit-rev-parse rev))))
+          (magit-buffer-revision
+           (and (bound-and-true-p magit-buffer-revision)
+                (rev-parse magit-buffer-revision)))
+          (defadvice word-at-point (:filter-return (ret))
+            (if (derived-mode-p 'magit-mode)
+                (rev-parse (magit-commit-at-point))
+              ret)))
+    (apply fn args)))
+
+;;;###autoload
+(advice-add #'git-link--commit :around #'+vc--git-link-use-full-magit-rev-a)
+
+;;;###autoload
+(advice-add #'git-link-commit :around #'+vc--git-link-use-full-magit-rev-a)
+
 
 ;;
 ;;; Helpers
 
-(defun +vc--remote-homepage ()
-  (require 'browse-at-remote)
-  (or (let ((url (browse-at-remote--remote-ref)))
-        (plist-get (browse-at-remote--get-url-from-remote (car url)) :url))
-      (user-error "Can't find homepage for current project")))
+(defun +vc--git-link (&optional arg)
+  (require 'git-link)
+  (dlet ((git-link-use-commit
+          (if arg (not git-link-use-commit) git-link-use-commit)))
+    (apply #'git-link
+           (git-link--remote)
+           (or (and (doom-region-active-p)
+                    (git-link--get-region))
+               (list nil nil)))))
 
-;; TODO: PR these upstream?
-;;;###autoload
-(defun browse-at-remote--format-region-url-as-codeberg (repo-url location filename &optional linestart lineend)
-  "URL formatted for codeberg."
-  (cond
-   ((and linestart lineend)
-    (format "%s/src/%s/%s#L%d-L%d" repo-url location filename linestart lineend))
-   (linestart (format "%s/src/%s/%s#L%d" repo-url location filename linestart))
-   (t (format "%s/src/%s/%s" repo-url location filename))))
+(defun +vc--git-link-commit (&optional arg)
+  (require 'git-link)
+  (dlet ((git-link-use-commit
+          (if arg (not git-link-use-commit) git-link-use-commit)))
+    (git-link-commit (git-link--select-remote))))
+
+(defun +vc--git-link-homepage ()
+  (require 'git-link)
+  (git-link-homepage (git-link--remote)))
+
+
+;;
+;;; * Commands
 
 ;;;###autoload
 (defun browse-at-remote--format-commit-url-as-codeberg (repo-url commithash)

@@ -1,3 +1,4 @@
+# -*- doom-docs -*-
 #+title:    :app irc
 #+subtitle: How neckbeards socialize
 #+created:  June 11, 2017
@@ -13,15 +14,11 @@ This module turns Emacs into an IRC client, capable of OS notifications.
 /This module has no flags./
 
 ** Packages
-- [[doom-package:circe]]
-- [[doom-package:circe-notifications]]
+- [[package:circe]]
+- [[package:circe-notifications]]
 
 ** Hacks
 /No hacks documented for this module./
-
-** TODO Changelog
-# This section will be machine generated. Don't edit it by hand.
-/This module does not have a changelog yet./
 
 * Installation
 [[id:01cffea4-3329-45e2-a892-95a384ab2338][Enable this module in your ~doom!~ block.]]
@@ -51,8 +48,8 @@ environment.systemPackages = [ pkgs.gnutls ];
 #+end_src
 
 * TODO Usage
-#+begin_quote
- 󱌣 /This module's usage documentation is incomplete./ [[doom-contrib-module:][Complete it?]]
+#+begin_quote wip
+/This module's usage documentation is incomplete./ [[doom-contrib-module:][Complete it?]]
 #+end_quote
 
 To connect to IRC use ~M-x =irc~.
@@ -69,8 +66,8 @@ When in a circe buffer these keybindings will be available:
 | ~circe-reconnect~           | [[kbd:][<localleader> R]] | Reconnect the current server                 |
 
 * TODO Configuration
-#+begin_quote
- 󱌣 /This module's configuration documentation is incomplete./ [[doom-contrib-module:][Complete it?]]
+#+begin_quote wip
+/This module's configuration documentation is incomplete./ [[doom-contrib-module:][Complete it?]]
 #+end_quote
 
 Use ~set-irc-server! SERVER PLIST~ to configure IRC servers. Its second argument
@@ -114,43 +111,37 @@ macos or :tools pass modules if you want integration into the MacOS keychain or
       :channels ("#emacs"))))
 #+end_src
 
-If Doom's [[doom-module::tools pass]] module is enabled, ~auth-source~ can integrate
+If Doom's [[module::tools pass]] module is enabled, ~auth-source~ can integrate
 with [[https://www.passwordstore.org/][Pass]].
 
-#+begin_quote
-  A common mistake is to interpolate the return value of your secrets retrieval
-    function into the plist you pass to ~set-irc-server!~. This means that not
-    only will your secrets will be stored, in plaintext, somewhere in Emacs
-    state, but your password manager (or GnuPG) will likely prompt you for your
-    GPG key passphrase when the ~set-irc-server!~ call is made! For example,
-    don't do this!
+#+begin_quote warning
+A common mistake is to interpolate the return value of your secrets retrieval
+function into the plist you pass to ~set-irc-server!~. This means that not only
+will your secrets will be stored, in plaintext, somewhere in Emacs state, but
+your password manager (or GnuPG) will likely prompt you for your GPG key
+passphrase when the ~set-irc-server!~ call is made! For example, don't do this!
 
-      (set-irc-server! "irc.libera.chat"
-        `(:tls t
-          :port 6697
-          :nick "doom"
-          :sasl-username ,(fetch-password "irc/libera.chat")
-          :sasl-password ,(fetch-password "irc/libera.chat")
-          :channels ("#emacs")))
+  (set-irc-server! "irc.libera.chat"
+    `(:tls t
+      :port 6697
+      :nick "doom"
+      :sasl-username ,(fetch-password "irc/libera.chat")
+      :sasl-password ,(fetch-password "irc/libera.chat")
+      :channels ("#emacs")))
 
-    Do this, instead:
+Do this, instead:
 
-      (set-irc-server! "irc.libera.chat"
-        '(:tls t
-          :port 6697
-          :nick "doom"
-          :sasl-username (+pass-get-user   "irc/libera.chat")
-          :sasl-password (+pass-get-secret "irc/libera.chat")
-          :channels ("#emacs")))
+  (set-irc-server! "irc.libera.chat"
+    '(:tls t
+      :port 6697
+      :nick "doom"
+      :sasl-username (+pass-get-user   "irc/libera.chat")
+      :sasl-password (+pass-get-secret "irc/libera.chat")
+      :channels ("#emacs")))
 #+end_quote
 
 * TODO Troubleshooting
 /There are no known problems with this module./ [[doom-report:][Report one?]]
 
 * Frequently asked questions
-/This module has no FAQs yet./ [[doom-suggest-faq:][Ask one?]]
-
-* TODO Appendix
-#+begin_quote
- 󱌣 This module has no appendix yet. [[doom-contrib-module:][Write one?]]
-#+end_quote
+/This module has no FAQs yet./ [[doom-contrib-faq:][Ask one?]]

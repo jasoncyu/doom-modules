@@ -1,5 +1,15 @@
 ;;; checkers/syntax/config.el -*- lexical-binding: t; -*-
 
+(add-hook! 'doom-escape-hook :append
+  (defun +syntax-check-buffer-h ()
+    "Update flycheck/flymake on ESC in normal mode."
+    (ignore  ; always return nil
+     (cond ((bound-and-true-p flycheck-mode)
+            (ignore-errors (flycheck-buffer)))
+           ((bound-and-true-p flymake-mode)
+            (ignore-errors (flymake-start t)))))))
+
+
 ;;
 ;;; Flycheck
 
@@ -37,18 +47,16 @@
                   (doom-project-p))))
         t)
 
+  ;; HACK: Keep "Flycheck: no syntax checker for X-mode can run here; C-c ! v
+  ;;   shows why" warnings out of the echo-area (still logged to *Messages*
+  ;;   though).
+  (advice-add #'flycheck--report-no-checker :around #'doom-shut-up-a)
+
   ;; Don't commandeer input focus if the error message pops up (happens when
   ;; tooltips and childframes are disabled).
   (set-popup-rules!
     '(("^\\*Flycheck error messages\\*" :select nil)
       ("^\\*Flycheck errors\\*" :size 0.25)))
-
-  (add-hook! 'doom-escape-hook :append
-    (defun +syntax-check-buffer-h ()
-      "Flycheck buffer on ESC in normal mode."
-      (when flycheck-mode
-        (ignore-errors (flycheck-buffer))
-        nil)))
 
   (map! :map flycheck-error-list-mode-map
         :n "C-n"    #'flycheck-error-list-next-error
@@ -69,7 +77,7 @@
   ;; HACK: Only display the flycheck popup if we're in normal mode (for evil
   ;;   users) or if no selection or completion is active. This popup can
   ;;   interfere with the active evil mode, clear active regions, and other
-  ;;   funny business (see #7242).
+  ;;   funny business (see doomemacs/core#7242).
   (defadvice! +syntax--disable-flycheck-popup-tip-maybe-a (&rest _)
     :before-while #'flycheck-popup-tip-show-popup
     (if (and (bound-and-true-p evil-local-mode)
@@ -102,9 +110,8 @@
 
   (defadvice! +syntax-hide-posframe-on-next-command-a (fn &rest args)
     :around #'flycheck-posframe-show-posframe
-    (letf! ((defun posframe-show (&rest args)
-              (add-hook 'post-command-hook #'+syntax--flycheck-posframe-hide-h)
-              (apply posframe-show args)))
+    (letf! (defadvice posframe-show (:before (&rest _args))
+             (add-hook 'post-command-hook #'+syntax--flycheck-posframe-hide-h))
       (apply fn args)))
 
   (after! company

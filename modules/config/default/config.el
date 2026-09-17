@@ -370,12 +370,12 @@ Continues comments if executed from a commented line."
 (define-key! help-map
   ;; new keybinds
   "'"    #'doom/describe-char
-  "u"    #'doom/help-autodefs
+  "u"    #'doom/describe-autodef
   "E"    #'doom/sandbox
   "M"    #'doom/describe-active-minor-mode
   "O"    #'+lookup/online
   "T"    #'doom/toggle-profiler
-  "V"    #'doom/help-custom-variable
+  "V"    #'doom/describe-option
   "W"    #'+default/man-or-woman
   "C-k"  #'describe-key-briefly
   "C-l"  #'describe-language-environment
@@ -387,16 +387,17 @@ Continues comments if executed from a commented line."
 
   ;; replacement keybinds
   ;; replaces `info-emacs-manual' b/c it's on C-m now
-  "r"    nil
+  "r"    `("reload" . ,(make-sparse-keymap))
   "rr"   #'doom/reload
   "rt"   #'doom/reload-theme
   "rp"   #'doom/reload-packages
   "rf"   #'doom/reload-font
   "re"   #'doom/reload-env
+  "rd"   #'doom/reload-docs
 
   ;; make `describe-bindings' available under the b prefix which it previously
   ;; occupied. Add more binding related commands under that prefix as well
-  "b"    nil
+  "b"    `("bindings" . ,(make-sparse-keymap))
   "bb"   #'describe-bindings
   "bi"   #'which-key-show-minor-mode-keymap
   "bm"   #'which-key-show-major-mode
@@ -405,24 +406,25 @@ Continues comments if executed from a commented line."
   "bk"   #'which-key-show-keymap
 
   ;; replaces `apropos-documentation' b/c `apropos' covers this
-  "d"    nil
+  "d"    `("doom" . ,(make-sparse-keymap))
+  "da"   #'doom/describe-autodef
   "db"   #'doom/report-bug
   "dc"   #'doom/open-private-config
   "dd"   #'doom-debug-mode
-  "df"   #'doom/help-faq
-  "dh"   #'doom/help
+  "df"   #'doom/docs-find-file
+  "dh"   #'doom/docs
+  "di"   #'doom/info
   "dl"   #'doom/help-search-load-path
   "dL"   #'doom/help-search-loaded-files
-  "dm"   #'doom/help-modules
-  "dn"   #'doom/help-news
-  "dN"   #'doom/help-search-news
+  "dm"   #'doom/describe-module
+  "dM"   #'doom/docs-module
+  "dn"   #'doom/docs-news
   "dpc"  #'doom/help-package-config
   "dph"  #'doom/help-package-homepage
-  "dpp"  #'doom/help-packages
-  "ds"   #'doom/help-search-headings
-  "dS"   #'doom/help-search
+  "dpp"  #'doom/describe-package
+  "ds"   #'doom/docs-headings
+  "dS"   #'doom/docs-search
   "dt"   #'doom/toggle-profiler
-  "du"   #'doom/help-autodefs
   "dv"   #'doom/version
   "dx"   #'doom/sandbox
 
@@ -434,27 +436,16 @@ Continues comments if executed from a commented line."
   ;; replaces `Info-got-emacs-command-node' b/c redundant w/ `Info-goto-node'
   "F"    #'describe-face
   ;; replaces `view-hello-file' b/c annoying
-  "h"    nil
+  "h"    #'doom/help
+  "H"    #'doom/docs
   ;; replaces `view-emacs-news' b/c it's on C-n too
   "n"    #'doom/help-news
   ;; replaces `help-with-tutorial', b/c it's less useful than `load-theme'
   "t"    #'load-theme
   ;; replaces `finder-by-keyword' b/c not useful
-  "p"    #'doom/help-packages
-  ;; replaces `describe-package' b/c redundant w/ `doom/help-packages'
+  "p"    #'doom/describe-package
+  ;; replaces `describe-package' b/c `doom/help-packages' supercedes it
   "P"    #'find-library)
-
-(after! which-key
-  (let ((prefix-re (regexp-opt (list doom-leader-key doom-leader-alt-key))))
-    (cl-pushnew `((,(format "\\`\\(?:<\\(?:\\(?:f1\\|help\\)>\\)\\|C-h\\|%s h\\) d\\'" prefix-re))
-                  nil . "doom")
-                which-key-replacement-alist)
-    (cl-pushnew `((,(format "\\`\\(?:<\\(?:\\(?:f1\\|help\\)>\\)\\|C-h\\|%s h\\) r\\'" prefix-re))
-                  nil . "reload")
-                which-key-replacement-alist)
-    (cl-pushnew `((,(format "\\`\\(?:<\\(?:\\(?:f1\\|help\\)>\\)\\|C-h\\|%s h\\) b\\'" prefix-re))
-                  nil . "bindings")
-                which-key-replacement-alist)))
 
 
 (when (modulep! +bindings)
@@ -592,7 +583,7 @@ Continues comments if executed from a commented line."
   (add-hook 'evil-insert-state-entry-hook #'delete-selection-mode)
   (add-hook 'evil-insert-state-exit-hook  #'+default-disable-delete-selection-mode-h)
 
-  ;; Make SPC u SPC u [...] possible (#747)
+  ;; Make SPC u SPC u [...] possible (doomemacs/core#747)
   (map! :map universal-argument-map
         :prefix doom-leader-key     "u" #'universal-argument-more
         :prefix doom-leader-alt-key "u" #'universal-argument-more)

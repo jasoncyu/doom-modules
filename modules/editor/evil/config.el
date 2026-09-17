@@ -61,7 +61,7 @@ directives. By default, this only recognizes C directives."
               ((modulep! :emacs undo) 'undo-fu)
               ((> emacs-major-version 27) 'undo-redo)))
 
-  ;; Fix #7141
+  ;; Fix doomemacs/core#7141
   (defadvice! +evil--persist-state-a (fn &rest args)
     "When changing major modes, Evil's state is lost. This advice preserves it."
     :around #'set-auto-mode
@@ -77,11 +77,13 @@ directives. By default, this only recognizes C directives."
   :config
   (evil-select-search-module 'evil-search-module 'evil-search)
 
+  (add-to-list 'doom-which-key-trim-prefixes "^evil-")
+
   ;; HACK: `evil-ex-search' (used by `n'/`N') calls `isearch-range-invisible'
   ;;   which temporarily opens fold overlays, but never calls
   ;;   `isearch-clean-overlays' to restore them. This corrupts org-fold overlay
   ;;   state, making subtrees permanently unfoldable with TAB. See
-  ;;   emacs-evil/evil#1630, #8625.
+  ;;   emacs-evil/evil#1630, doomemacs/core#8625.
   ;; REVIEW: Remove when emacs-evil/evil#1630 is resolved.
   (defadvice! +evil--clean-isearch-overlays-a (&rest _)
     :after #'evil-ex-search
@@ -190,8 +192,9 @@ directives. By default, this only recognizes C directives."
   ;;   spaces. It doesn't in vim, so it shouldn't in evil.
   (defadvice! +evil--no-squeeze-on-fill-a (fn &rest args)
     :around '(evil-fill evil-fill-and-move)
-    (letf! (defun fill-region (from to &optional justify _nosqueeze to-eop)
-             (funcall fill-region from to justify t to-eop))
+    (letf! (defadvice fill-region
+               (:around (fn from to &optional justify _nosqueeze to-eop))
+             (funcall fn from to justify t to-eop))
       (apply fn args)))
 
   ;; HACK: Make Emacs registers recognize and treat Evil registers like their
@@ -300,6 +303,8 @@ don't offer any/enough real value to users.")
 (use-package! evil-easymotion
   :after-call doom-first-input-hook
   :commands evilem-create evilem-default-keybindings
+  :init
+  (add-to-list 'doom-which-key-trim-prefixes "^evilem--?motion-")
   :config
   ;; Use evil-search backend, instead of isearch
   (evilem-make-motion evilem-motion-search-next #'evil-ex-search-next
@@ -335,7 +340,9 @@ don't offer any/enough real value to users.")
   :hook ((csharp-mode csharp-ts-mode) . +evil-embrace-angle-bracket-modes-hook-h)
   :hook ((java-mode java-ts-mode) . +evil-embrace-angle-bracket-modes-hook-h)
   :hook ((scala-mode scala-ts-mode) . +evil-embrace-scala-mode-hook-h)
-  :hook ((swift-mode typescript-mode rustic-mode) . +evil-embrace-angle-bracket-modes-hook-h)
+  :hook ((swift-mode swift-ts-mode) . +evil-embrace-angle-bracket-modes-hook-h)
+  :hook ((typescript-mode typescript-ts-mode) . +evil-embrace-angle-bracket-modes-hook-h)
+  :hook ((rustic-mode rust-ts-mode) . +evil-embrace-angle-bracket-modes-hook-h)
   :init
   (after! evil-surround
     (evil-embrace-enable-evil-surround-integration))
@@ -383,7 +390,7 @@ don't offer any/enough real value to users.")
   :hook (doom-first-input . evil-escape-mode)
   :init
   (setq evil-escape-excluded-states '(normal visual multiedit emacs motion)
-        evil-escape-excluded-major-modes '(neotree-mode treemacs-mode vterm-mode)
+        evil-escape-excluded-major-modes '(neotree-mode treemacs-mode vterm-mode ghostel-mode)
         evil-escape-key-sequence nil
         evil-escape-delay 0.15)
   (evil-define-key* '(insert replace visual operator) 'global "\C-g" #'evil-escape)
@@ -617,7 +624,7 @@ don't offer any/enough real value to users.")
        "L"       #'+evil/window-move-right
        "C-S-w"   #'ace-swap-window
        ;; Window undo/redo
-       (:prefix "m"
+       (:prefix ("m" . "maximize")
         "m"       #'doom/window-maximize-buffer
         "v"       #'doom/window-maximize-vertically
         "s"       #'doom/window-maximize-horizontally)
@@ -645,7 +652,7 @@ don't offer any/enough real value to users.")
 
       ;; evil-easymotion
       (:after evil-easymotion
-       :m "gs" evilem-map
+       :m "gs" (cons "Easymotion" evilem-map)
        ;; TODO: Use named functions
        (:map evilem-map
         "a" (evilem-create #'evil-forward-arg)

@@ -167,7 +167,7 @@ dashboard reloading is inhibited.")
 ;;; Major mode
 
 (define-derived-mode +dashboard-mode special-mode
-  (format "DOOM v%s" doom-version)
+  (format "DOOM v%s" (doom-version))
   "Major mode for the DOOM dashboard buffer."
   :syntax-table nil
   :abbrev-table nil
@@ -184,7 +184,7 @@ dashboard reloading is inhibited.")
   ;; Line numbers are ugly with large margins
   (setq-local display-line-numbers-type nil)
   ;; Ensure the ever-changing margins don't screw with the mode-line's
-  ;; right-alignment (see #8114).
+  ;; right-alignment (see doomemacs/core#8114).
   (setq-local mode-line-right-align-edge 'right-margin)
   ;; Ensure point is always on a button
   (add-hook 'post-command-hook #'+dashboard-reposition-point-h nil 'local)
@@ -250,8 +250,8 @@ dashboard reloading is inhibited.")
     ;; `persp-mode' integration: update `default-directory' when switching perspectives
     (add-hook 'persp-created-functions #'+dashboard--persp-record-project-h)
     (add-hook 'persp-activated-functions #'+dashboard--persp-detect-project-h)
-    ;; Fix #2219 where, in GUI daemon frames, the dashboard loses center
-    ;; alignment after switching (or killing) workspaces.
+    ;; Fix doomemacs/core#2219 where, in GUI daemon frames, the dashboard loses
+    ;; center alignment after switching (or killing) workspaces.
     (when (daemonp)
       (add-hook 'persp-activated-functions #'+dashboard-reload-maybe-h))
     (add-hook 'persp-before-switch-functions #'+dashboard--persp-record-project-h)))
@@ -561,7 +561,7 @@ Applies line-prefix and indent-prefix text properties to respect
          beg (point) `(line-prefix ,text-prefix indent-prefix ,text-prefix)))
 
       (when (> bot-pad 0)
-        (insert "\n" (propertize " " 'display `(space :height ,bot-pad)))))))
+        (insert (propertize " " 'display `(space :height ,bot-pad)) "\n")))))
 
 (defun +dashboard-widget-loaded ()
   "Draw number of modules and packages loaded, and the session's startup time."
@@ -627,12 +627,16 @@ See `+dashboard-menu-sections' to change the contents of the menu."
   "Draw project links."
   (+dashboard-insert
    (with-temp-buffer
-     (insert (propertize " " 'display '(space . (:relative-height 2.0))) "\n")
-     (insert-text-button (or (nerd-icons-codicon "nf-cod-octoface" :face '+dashboard-footer-icon :height 1.3 :v-adjust -0.15)
-                             (propertize "github" 'face '+dashboard-footer))
-                         'action (lambda (_) (browse-url "https://github.com/doomemacs/doomemacs"))
-                         'follow-link t
-                         'help-echo "Open Doom Emacs github page")
+     (insert "\n" (propertize " " 'display '(space . (:relative-height 2.0))))
+     (insert-text-button
+      (or (nerd-icons-codicon "nf-cod-octoface"
+                              :face '+dashboard-footer-icon
+                              :height 1.3
+                              :v-adjust -0.15)
+          (propertize "github" 'face '+dashboard-footer))
+      'action (lambda (_) (browse-url "https://github.com/doomemacs"))
+      'follow-link t
+      'help-echo "Open Doom Emacs github page")
      (insert "\n")
      (buffer-string))))
 

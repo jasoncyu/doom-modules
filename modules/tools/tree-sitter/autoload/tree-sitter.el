@@ -1,5 +1,11 @@
 ;;; tools/tree-sitter/autoload/tree-sitter.el -*- lexical-binding: t; -*-
 
+;; When this module isn't enabled, let's make treesit as invisible as possible.
+;; Don't prompt to installing missing grammars. Languages without support should
+;; simply error out or end up in fundamental-mode (or similar).
+;;;###autodef (setq treesit-auto-install-grammar 'never)
+(setq treesit-auto-install-grammar 'ask)
+
 ;;;###autodef (fset 'tree-sitter! #'ignore)
 (defun tree-sitter! ()
   (message "Old tree-sitter.el support is deprecated!"))
@@ -31,23 +37,23 @@ pre-Emacs 31."
       (when m
         (setf (alist-get m major-mode-remap-defaults) ts-mode))
       (put ts-mode '+tree-sitter (cons m (mapcar #'car recipes))))
-    (when-let* ((fn (intern-soft (format "%s-maybe" ts-mode))))
-      (cl-callf2 rassq-delete-all fn auto-mode-alist)
-      (cl-callf2 rassq-delete-all fn interpreter-mode-alist))
+    ;; HACK: Prevent ts-modes clobbering `auto-mode-alist' and/or
+    ;;   `interpreter-mode-alist' from their autoloads or when they're first
+    ;;   loaded.
+    (dolist (hook '("%s" "%s-maybe"))
+      (when-let* ((fn (intern-soft (format hook ts-mode))))
+        (dolist (var '(auto-mode-alist interpreter-mode-alist))
+          (when-let* ((val (symbol-value var))
+                      (entry (rassq fn val)))
+            (cl-callf2 delete entry val)
+            (defer-until! (and (fboundp ts-mode)
+                               (not (autoloadp (symbol-function ts-mode))))
+              (cl-callf2 delete entry val))))))
     (when-let* ((recipes (cl-delete-if-not #'cdr recipes)))
       (with-eval-after-load 'treesit
-        (dolist (recipe recipes)
-          (cl-destructuring-bind (name &key url rev source-dir cc cpp commit) (ensure-list recipe)
-            (setf (alist-get name treesit-language-source-alist)
-                  (append (list url rev source-dir cc cpp)
-                          ;; COMPAT: 31.1 introduced a COMMIT recipe argument. On
-                          ;;   <=30.x, extra arguments will trigger an arity error
-                          ;;   when installing grammars.
-                          (if (eq (cdr (func-arity
-                                        (advice--cd*r
-                                         (advice--symbol-function 'treesit--install-language-grammar-1))))
-                                  'many)
-                              (list commit))))))))))
+        (dolist (recipe (mapcar #'ensure-list recipes))
+          (setf (alist-get (car recipe) treesit-language-source-alist)
+                (cdr (apply #'+tree-sitter-source recipe))))))))
 
 ;; ;; HACK: Remove and refactor when `use-package' eager macro expansion is solved or `use-package!' is removed
 ;; ;;;###autoload

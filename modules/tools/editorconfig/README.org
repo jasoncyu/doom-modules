@@ -1,3 +1,4 @@
+# -*- doom-docs -*-
 #+title:    :tools editorconfig
 #+subtitle: Let someone else argue tabs and spaces
 #+created:  December 27, 2015
@@ -9,7 +10,7 @@ style on a per-project basis with =.editorconfig= files ([[https://editorconfig-
 with or without the native editorconfig binary.
 
 ** Maintainers
-- [[doom-user:][@hlissner]]
+- [[github:hlissner]]
 
 [[doom-contrib-maintainer:][Become a maintainer?]]
 
@@ -17,15 +18,11 @@ with or without the native editorconfig binary.
 /This module has no flags./
 
 ** Packages
-- [[doom-package:editorconfig-emacs]]
+- [[package:editorconfig-emacs]]
  
 ** Hacks
-- *Special integration for =ws-butler=:* this module will use [[doom-package:ws-butler]] to
+- *Special integration for =ws-butler=:* this module will use [[pkg:ws-butler]] to
   enforce ~trim_trailing_whitespace~.
-
-** TODO Changelog
-# This section will be machine generated. Don't edit it by hand.
-/This module does not have a changelog yet./
 
 * Installation
 [[id:01cffea4-3329-45e2-a892-95a384ab2338][Enable this module in your ~doom!~ block.]]
@@ -43,8 +40,8 @@ project) is needed to configure code style for files in the same directory or
 below. Documentation on editorconfig's properties can be found [[https://editorconfig.org/#example-file][here]].
 
 * TODO Configuration
-#+begin_quote
- 󱌣 /This module's configuration documentation is incomplete./ [[doom-contrib-module:][Complete it?]]
+#+begin_quote wip
+/This module's configuration documentation is incomplete./ [[doom-contrib-module:][Complete it?]]
 #+end_quote
 
 ** Adding support for more major modes
@@ -73,9 +70,4 @@ session of Emacs. Look for variables that have the words =indent=, =offset= or
 /There are no known problems with this module./ [[doom-report:][Report one?]]
 
 * Frequently asked questions
-/This module has no FAQs yet./ [[doom-suggest-faq:][Ask one?]]
-
-* TODO Appendix
-#+begin_quote
- 󱌣 This module has no appendix yet. [[doom-contrib-module:][Write one?]]
-#+end_quote
+/This module has no FAQs yet./ [[doom-contrib-faq:][Ask one?]]

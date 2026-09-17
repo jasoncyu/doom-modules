@@ -27,7 +27,6 @@
   (map! :localleader
         :map ,(intern (format "%s-map" mode))
         "f" #'nix-update-fetch
-        "p" #'nix-format-buffer
         "r" #'nix-repl-show
         "s" #'nix-shell
         "b" #'nix-build
@@ -46,8 +45,7 @@
   :when (modulep! +tree-sitter)
   :defer t
   :init
-  (set-tree-sitter! 'nix-mode 'nix-ts-mode
-    '((nix :url "https://github.com/nix-community/tree-sitter-nix")))
+  (set-tree-sitter! 'nix-mode 'nix-ts-mode 'nix)
   :config
   (+nix-common-config 'nix-ts-mode))
 
@@ -55,8 +53,9 @@
 (use-package! company-nixos-options
   :defer t
   :init
-  ;; Fix #3927: disable idle completion because `company-nixos-options' is
-  ;; dreadfully slow. It can still be invoked manually..
+  ;; HACK: Fix doomemacs/core#3927: disable idle completion because
+  ;;   `company-nixos-options' is dreadfully slow. It can still be invoked
+  ;;   manually.
   (setq-hook! '(nix-mode-hook nix-ts-mode-hook) company-idle-delay nil))
 
 

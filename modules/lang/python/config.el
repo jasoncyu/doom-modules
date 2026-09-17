@@ -30,11 +30,7 @@
         python-indent-guess-indent-offset-verbose nil)
 
   (when (modulep! +tree-sitter)
-    ;; It overwrites my rainbow identifiers
-    (add-hook! '(python-mode-hook python-ts-mode-hook) (lambda () (tree-sitter-hl-mode -1)))
-    (set-tree-sitter! 'python-mode 'python-ts-mode
-      `((python :url "https://github.com/tree-sitter/tree-sitter-python"
-                :rev ,(if (< (treesit-library-abi-version) 15) "v0.23.6" "v0.25.0")))))
+    (set-tree-sitter! 'python-mode 'python-ts-mode 'python))
 
   :config
   ;; HACK: `python-base-mode' (and `python-ts-mode') don't exist on pre-29
@@ -86,7 +82,8 @@
   ;;   (TERM=dumb), particularly on macOS. The ^C character is treated as
   ;;   literal input rather than triggering an interrupt signal. Disabling
   ;;   pyrepl forces the classic readline-based REPL which handles signals
-  ;;   correctly. See #8391, also used by VS Code's Python extension.
+  ;;   correctly. See doomemacs/core#8391, also used by VS Code's Python
+  ;;   extension.
   (add-to-list 'python-shell-process-environment "PYTHON_BASIC_REPL=1")
 
   (add-hook! '(python-mode-hook python-ts-mode-hook)
@@ -173,8 +170,9 @@
   :defer t
   :config
   ;; HACK: `pip-requirements-mode' performs a sudden HTTP request to
-  ;;   https://pypi.org/simple, which causes unexpected hangs (see #5998). This
-  ;;   advice defers this behavior until the first time completion is invoked.
+  ;;   https://pypi.org/simple, which causes unexpected hangs (see
+  ;;   doomemacs/core#5998). This advice defers this behavior until the first
+  ;;   time completion is invoked.
   ;; REVIEW: More sensible behavior should be PRed upstream.
   (defadvice! +python--init-completion-a (&rest _)
     "Call `pip-requirements-fetch-packages' first time completion is invoked."
@@ -245,14 +243,9 @@
 (use-package! uv-mode
   :when (modulep! +uv)
   :after python
+  :preface
+  (add-to-list 'auto-mode-alist '("/uv\\.lock\\'" . conf-toml-mode))
   :config
-  ;; open uv.lock files in toml-mode
-  (add-to-list 'auto-mode-alist
-               (cons "/uv\\.lock\\'"
-                     (if (and (modulep! :tools tree-sitter)
-                              (fboundp 'toml-ts-mode))
-                         'toml-ts-mode
-                       'conf-toml-mode)))
   ;; HACK: A faster (cached) version of the mode-line segment. See
   ;;   `+python-uv-mode-set-auto-h'.
   (setq uv-mode-mode-line-format '(+python--uv-version ("UV:" +python--uv-version " ")))

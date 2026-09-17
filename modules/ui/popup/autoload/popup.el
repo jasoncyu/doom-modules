@@ -110,9 +110,9 @@ the buffer is visible, then set another timer and try again later."
         (setf (alist-get param alist) size))
       (setf (alist-get 'window-parameters alist)
             parameters)
-      ;; Fixes #1305: addresses an edge case where a popup with a :size, :width
-      ;; or :height greater than the current frame's dimensions causes
-      ;; hanging/freezing (a bug in Emacs' `display-buffer' API perhaps?)
+      ;; Fixes doomemacs/core#1305: addresses an edge case where a popup with a
+      ;; :size, :width or :height greater than the current frame's dimensions
+      ;; causes hanging/freezing (a bug in Emacs' `display-buffer' API perhaps?)
       (let ((width  (cdr (assq 'window-width  alist)))
             (height (cdr (assq 'window-height alist))))
         (setf (alist-get 'window-width alist)
@@ -282,22 +282,24 @@ Possible values for this parameter are:
 Any non-nil value besides the above will be used as the raw value for
 `mode-line-format'."
   (when (bound-and-true-p +popup-buffer-mode)
-    (let ((modeline (+popup-parameter 'modeline)))
-      (cond ((eq modeline 't))
-            ((null modeline)
-             (mode-line-invisible-mode +1))
-            ((setq-local mode-line-format
-                         (if (functionp modeline)
-                             (funcall modeline)
-                           modeline)))))))
+    (dolist (win (seq-filter #'+popup-window-p (get-buffer-window-list)))
+      (let ((modeline (+popup-parameter 'modeline win)))
+        (unless (eq modeline t)
+          (set-window-parameter win 'mode-line-format
+                                (cond ((null modeline)
+                                       'none)
+                                      ((functionp modeline)
+                                       (funcall modeline))
+                                      (modeline))))))))
 (put '+popup-set-modeline-on-enable-h 'permanent-local-hook t)
 
 ;;;###autoload
 (defun +popup-unset-modeline-on-disable-h ()
   "Restore the modeline when `+popup-buffer-mode' is deactivated."
-  (when (and (not (bound-and-true-p +popup-buffer-mode))
-             (bound-and-true-p mode-line-invisible-mode))
-    (mode-line-invisible-mode -1)))
+  (unless (bound-and-true-p +popup-buffer-mode)
+    (dolist (win (seq-filter #'+popup-window-p (get-buffer-window-list)))
+      (when (+popup-parameter 'popup win)
+        (set-window-parameter win 'mode-line-format nil)))))
 
 ;;;###autoload
 (defun +popup-close-on-escape-h ()
@@ -383,6 +385,12 @@ This will do nothing if the popup's `quit' window parameter is either nil or
         (+popup--remember (list window)))
       (delete-window window)
       t)))
+
+;;;###autoload
+(defun +popup/kill ()
+  "Close popup WINDOW, despite its :quit property."
+  (interactive)
+  (+popup/close nil t))
 
 ;;;###autoload
 (defun +popup/close-all (&optional force-p)

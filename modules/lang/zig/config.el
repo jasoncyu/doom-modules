@@ -42,12 +42,12 @@
   :when (modulep! +tree-sitter)
   :defer t
   :init
-  (set-tree-sitter! 'zig-mode 'zig-ts-mode
-    '((zig :url "https://github.com/tree-sitter-grammars/tree-sitter-zig")))
+  (set-tree-sitter! 'zig-mode 'zig-ts-mode 'zig)
   :config
   (+zig-common-config 'zig-ts-mode)
 
-  ;; HACK: Rely on `major-mode-remap-defaults' instead (upstream also doesn't
-  ;;   check if the grammars are ready before adding these entries, which will
-  ;;   bork zig buffers).
-  (cl-callf2 rassq-delete-all 'zig-ts-mode auto-mode-alist))
+  ;; HACK: By setting this to nil, `zig-ts-mode' will no longer ignore our (or
+  ;;   user) recipes for the zig grammar in `treesit-language-source-alist'. It
+  ;;   also won't try to install them (redundant with what the tree-sitter
+  ;;   module already does).
+  (setq zig-ts-grammar-recipes nil))

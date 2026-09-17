@@ -34,13 +34,13 @@ of org-mode to properly utilize ID links.")
     "Setup `org-roam' but don't immediately initialize its database.
 Instead, initialize it when it will be actually needed."
     (letf! ((#'org-roam-db-sync #'ignore))
-      (org-roam-db-autosync-enable)))
+      (org-roam-db-autosync-mode +1)))
 
   (defadvice! +org-roam-try-init-db-a (&rest _)
     "Try to initialize org-roam database at the last possible safe moment.
 In case of failure, fail gracefully."
     :before #'org-roam-db-query
-    (message "Initializing org-roam database...")
+    (doom-log "Initializing org-roam database...")
     (advice-remove 'org-roam-db-query #'+org-roam-try-init-db-a)
     (org-roam-db-sync))
 
@@ -79,8 +79,9 @@ inserting the link."
   (defadvice! +org--roam-fix-completion-width-for-vertico-a (fn &rest args)
     "Fixes completion candidate width for vertico users."
     :around #'org-roam-node-read--to-candidate
-    (letf! (defun org-roam-node--format-entry (template node &optional width)
-             (funcall org-roam-node--format-entry template node
+    (letf! (defadvice org-roam-node--format-entry
+               (:around (fn template node &optional width))
+             (funcall fn template node
                       (if (bound-and-true-p vertico-mode)
                           (if (minibufferp)
                               (window-width)

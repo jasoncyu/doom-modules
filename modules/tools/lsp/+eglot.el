@@ -4,8 +4,9 @@
   :commands eglot eglot-ensure
   :hook (eglot-managed-mode . +lsp-optimization-mode)
   :init
-  (setq eglot-sync-connect 1
+  (setq eglot-sync-connect 0
         eglot-autoshutdown t
+        eglot-max-file-watches 5000  ; default is 10000
         ;; NOTE: We disable eglot-auto-display-help-buffer because :select t in
         ;;   its popup rule causes eglot to steal focus too often.
         eglot-auto-display-help-buffer nil
@@ -29,6 +30,10 @@
     :type-definition #'eglot-find-typeDefinition
     :documentation   #'+eglot-lookup-documentation)
 
+  (and (modulep! :checkers syntax -flymake)
+       (fboundp 'global-flycheck-eglot-mode)
+       (global-flycheck-eglot-mode +1))
+
   ;; Leave management of flymake to the :checkers syntax module.
   (when (modulep! :checkers syntax -flymake)
     (add-to-list 'eglot-stay-out-of 'flymake))
@@ -46,22 +51,24 @@ This gives the user a chance to open other project files before the server is
 auto-killed (which is a potentially expensive process). It also spares the
 server an expensive restart when its buffer is reverted."
     :around #'eglot--managed-mode
-    (letf! (defun eglot-shutdown (server)
+    (letf! (defadvice eglot-shutdown (:around (fn server))
              (if (or (null +lsp-defer-shutdown)
                      (eq +lsp-defer-shutdown 0))
-                 (prog1 (funcall eglot-shutdown server)
+                 (prog1 (funcall fn server)
                    (+lsp-optimization-mode -1))
                (run-at-time
                 (if (numberp +lsp-defer-shutdown) +lsp-defer-shutdown 3)
                 nil (lambda (server)
                       (unless (eglot--managed-buffers server)
-                        (prog1 (funcall eglot-shutdown server)
+                        (prog1 (funcall fn server)
                           (+lsp-optimization-mode -1))))
                 server)))
       (funcall fn server))))
 
 
+;; DEPRECATED: Remove when 29 support is dropped
 (use-package! eglot-booster
+  :when (< emacs-major-version 30)
   :when (modulep! +booster)
   :after eglot
   :init
@@ -81,8 +88,3 @@ server an expensive restart when its buffer is reverted."
   (map! :after eglot
         :map eglot-mode-map
         [remap xref-find-apropos] #'consult-eglot-symbols))
-
-
-(use-package! flycheck-eglot
-  :when (modulep! :checkers syntax -flymake)
-  :hook (eglot-managed-mode . flycheck-eglot-mode))

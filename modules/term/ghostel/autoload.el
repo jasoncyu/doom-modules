@@ -1,4 +1,20 @@
 ;;; term/ghostel/autoload.el -*- lexical-binding: t; -*-
+;;; Commentary:
+;;; Code:
+
+(defun +ghostel--buffer-name (&optional prefix suffix project?)
+  (format "*%sghostel%s%s<%s>*"
+          (or prefix "")
+          (or suffix "")
+          (if project?
+              (concat
+               ":" (or (doom-project-name)
+                       (file-name-nondirectory
+                        (directory-file-name default-directory))))
+            "")
+          (if (bound-and-true-p persp-mode)
+              (safe-persp-name (get-current-persp))
+            "main")))
 
 ;;;###autoload
 (defun +ghostel/toggle (arg)
@@ -9,37 +25,28 @@ project's root.
 
 Returns the ghostel buffer."
   (interactive "P")
-  (+ghostel--configure-project-root-and-display
-   arg
-   (lambda ()
-     (let ((buffer-name
-            (format "*doom:ghostel-popup:%s*"
-                    (if (bound-and-true-p persp-mode)
-                        (safe-persp-name (get-current-persp))
-                      "main")))
+  (dlet ((default-directory (or (doom-project-root) default-directory)))
+    (dlet ((ghostel-buffer-name (+ghostel--buffer-name "doom:" "-popup" t))
+           ghostel-buffer-name-function
+           confirm-kill-processes
            current-prefix-arg)
-       (when arg
-         (let ((buffer (get-buffer buffer-name))
-               (window (get-buffer-window buffer-name)))
-           (when (buffer-live-p buffer)
-             (kill-buffer buffer))
-           (when (window-live-p window)
-             (delete-window window))))
-       (if-let* ((win (get-buffer-window buffer-name)))
-           (delete-window win)
-         (let ((buffer (or (and (fboundp 'ghostel--find-buffer-by-identity)
-                                (ghostel--find-buffer-by-identity buffer-name))
-                           (get-buffer-create buffer-name))))
-           (require 'ghostel)
-           (ghostel--load-module t)
-           (ghostel--prepare-buffer buffer buffer-name)
-           (pop-to-buffer buffer)
-           (ghostel--init-buffer buffer buffer-name)))
-       (get-buffer buffer-name)))))
+      (when arg
+        (let ((buffer (get-buffer buffer-name))
+              (window (get-buffer-window buffer-name)))
+          (when (buffer-live-p buffer)
+            (kill-buffer buffer))
+          (when (window-live-p window)
+            (delete-window window))))
+      (if-let* ((win (get-buffer-window ghostel-buffer-name)))
+          (delete-window win)
+        (with-current-buffer (ghostel)
+          ;; Don't rename the buffer or the popup manager may lose track of it.
+          (setq-local ghostel-buffer-name-function nil)
+          (set-window-dedicated-p (get-buffer-window) t)
+          (current-buffer))))))
 
 ;;;###autoload
-(defun +ghostel/here (arg)
-  "Open a terminal buffer in the current window at project root.
+(defalias '+ghostel/here #'ghostel)
 
 If prefix ARG is non-nil, cd into `default-directory' instead of project root.
 

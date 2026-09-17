@@ -4,8 +4,8 @@
 (package! org
   :recipe (:host github
            ;; REVIEW: I intentionally avoid git.savannah.gnu.org because of SSL
-           ;;   issues (see #5655), uptime issues, download time, and lack of
-           ;;   shallow clone support.
+           ;;   issues (see doomemacs/core#5655), uptime issues, download time,
+           ;;   and lack of shallow clone support.
            :repo "emacs-straight/org-mode"
            :files (:defaults "etc")
            :depth 1
@@ -42,7 +42,7 @@
                (insert-file-contents "org-loaddefs.el")
                (save-excursion (insert "\n"))
                (insert-file-contents afile))))
-  :pin "2f6959386141ea0f02e84b7b5903c8866caf2636"  ; release_9.8.4
+  :pin "7427df2d96d264734e1ba2a943545faa1c8c763f"  ; release_9.8.9
   :env `((org--inhibit-version-check . t)))
 (package! org-contrib
   :recipe (:host github
@@ -62,7 +62,7 @@
 (when (modulep! :editor evil +everywhere)
   (package! evil-org
     :recipe (:host github :repo "doomelpa/evil-org-mode")
-    :pin "06518c65ff4f7aea2ea51149d701549dcbccce5d"))
+    :pin "e8b535bb0e9b590a9f46701b80c82dc9563f579e"))
 (when (modulep! +dragndrop)
   (package! org-download :pin "c8be2611786d1d8d666b7b4f73582de1093f25ac"))
 (when (modulep! +gnuplot)
@@ -73,10 +73,10 @@
 (when (modulep! +journal)
   (package! org-journal :pin "6460f6f2b0835b4b8aa87d5fdf40cac7deb319f5"))
 (when (modulep! +noter)
-  (package! org-noter :pin "ab9628e449d76af8b2e5a9d5fead4e03ca76a03d"))
+  (package! org-noter :pin "feae91ca4ee6fdc7fd2489fa751dd96bc1f3ddf2"))
 (when (modulep! +pretty)
-  (package! org-modern :pin "df2e0a54f6397391518f817038f9c11dba2851c2")
-  (package! org-appear :pin "32ee50f8fdfa449bbc235617549c1bccb503cb09"))
+  (package! org-modern :pin "1959cd4759d4abc8dd695a560563283d838e44e1")
+  (package! org-appear :pin "77d23efec5f5c25fc0798364d2b51a3ce3d8d518"))
 (when (modulep! +present)
   (package! centered-window
     :recipe (:host github :repo "nullvec/centered-window-mode")

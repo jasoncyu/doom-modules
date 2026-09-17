@@ -1,9 +1,5 @@
 ;;; lang/emacs-lisp/autoload/emacs-lisp.el -*- lexical-binding: t; -*-
 
-(defvar buttercup-suites)
-(defvar pp-max-width)
-
-
 ;;
 ;;; Library
 
@@ -31,7 +27,7 @@ Meant as an eval handler for Doom's :tools eval module."
                   (with-doom-context 'eval
                     (eval-region beg end buffer load-read-function))
                   (with-current-buffer buffer
-                    (let ((pp-max-width nil))
+                    (dlet ((pp-max-width nil))
                       (require 'pp)
                       (pp-buffer)
                       (replace-regexp-in-string "\\\\n" "\n" (string-trim-left (buffer-string))))))
@@ -51,61 +47,11 @@ Intended to replace `lisp-outline-level'."
 ;;
 ;;; Handlers
 
-(defun +emacs-lisp--module-at-point ()
-  "Return (CATEGORY MODULE FLAG) at point inside a `doom!' block."
-  (let ((origin (point))
-        (syntax (syntax-ppss)))
-    (when (and (> (ppss-depth syntax) 0) (not (ppss-string-terminator syntax)))
-      (save-excursion
-        (let ((parens (ppss-open-parens syntax))
-              (doom-depth 1))
-          (while (and parens (progn (goto-char (car parens))
-                                    (not (looking-at "(doom!\\_>"))))
-            (setq parens (cdr parens)
-                  doom-depth (1+ doom-depth)))
-          (when parens ;; Are we inside a `doom!' block?
-            (goto-char origin)
-            (let* ((doom-start (car parens))
-                   (bare-symbol
-                    (if (ppss-comment-depth syntax)
-                        (= (save-excursion (beginning-of-thing 'list)) doom-start)
-                      (null (cdr parens))))
-                   (sexp-start (if bare-symbol
-                                   (beginning-of-thing 'symbol)
-                                 (or (cadr parens) (beginning-of-thing 'list))))
-                   (match-start nil))
-              (goto-char sexp-start)
-              (while (and (not match-start)
-                          (re-search-backward
-                           "\\_<:\\(?:\\sw\\|\\s_\\)+\\_>" ;; Find a keyword.
-                           doom-start 'noerror))
-                (unless (looking-back "(" (pos-bol))
-                  (let ((kw-syntax (syntax-ppss)))
-                    (when (and (= (ppss-depth kw-syntax) doom-depth)
-                               (not (ppss-string-terminator kw-syntax))
-                               (not (ppss-comment-depth kw-syntax)))
-                      (setq match-start (point))))))
-              (when match-start
-                (let (category module flag)
-                  ;; `point' is already at `match-start'.
-                  (setq category (symbol-at-point))
-                  (goto-char origin)
-                  (if bare-symbol
-                      (setq module (symbol-at-point))
-                    (let ((symbol (symbol-at-point))
-                          (head (car (list-at-point))))
-                      (if (and (symbolp head) (not (keywordp head))
-                               (not (eq head symbol)))
-                          (setq module head
-                                flag symbol)
-                        (setq module symbol))))
-                  (list category module flag))))))))))
-
 ;;;###autoload
 (defun +emacs-lisp-lookup-definition (_thing)
   "Lookup definition of THING."
-  (if-let* ((module (+emacs-lisp--module-at-point)))
-      (doom/help-modules (car module) (cadr module) 'visit-dir)
+  (if-let* ((module (doom-module-at-point)))
+      (doom/docs-module module 'visit-dir)
     (call-interactively #'elisp-def)))
 
 (defun +emacs-lisp--describe-symbol (symbol)
@@ -121,22 +67,8 @@ Intended to replace `lisp-outline-level'."
 (defun +emacs-lisp-lookup-documentation (thing)
   "Lookup THING with `helpful-variable' if it's a variable, `helpful-callable'
 if it's callable, `apropos' otherwise."
-  (cond ((when-let* ((module (+emacs-lisp--module-at-point)))
-           (doom/help-modules (car module) (cadr module))
-           (when (eq major-mode 'org-mode)
-             (goto-char (point-min))
-             (with-demoted-errors "%s"
-               (re-search-forward
-                (if (caddr module)
-                    "^\\*+ Module flags"
-                  "^\\* Description"))
-               (when (caddr module)
-                 (re-search-forward (format "=\\%s=" (caddr module))
-                                    nil t))
-               (when (memq (get-char-property (line-end-position)
-                                              'invisible)
-                           '(outline org-fold-outline))
-                 (org-show-hidden-entry))))
+  (cond ((when-let* ((key (doom-module-at-point)))
+           (doom/docs-module key)
            'deferred))
         (thing
          (let ((thing (intern thing)))
@@ -203,12 +135,12 @@ selected before this command was invoked."
 (defun +emacs-lisp/buttercup-run-file ()
   "Run all buttercup tests in the focused buffer."
   (interactive)
-  (let ((load-path
-         (append (list (doom-path (dir!) "..")
-                       (or (doom-project-root)
-                           default-directory))
-                 load-path))
-        (buttercup-suites nil))
+  (dlet ((load-path
+          (append (list (doom-path (dir!) "..")
+                        (or (doom-project-root)
+                            default-directory))
+                  load-path))
+         (buttercup-suites nil))
     (save-selected-window
       (eval-buffer)
       (buttercup-run))
@@ -218,12 +150,12 @@ selected before this command was invoked."
 (defun +emacs-lisp/buttercup-run-project ()
   "Run all buttercup tests in the project."
   (interactive)
-  (let* ((default-directory (doom-project-root))
-         (load-path (append (list (doom-path "test")
-                                  default-directory)
-                            load-path))
-         (buttercup-suites nil))
-    (buttercup-run-discover)))
+  (dlet ((default-directory (doom-project-root)))
+    (dlet ((load-path (append (list (doom-path "test")
+                                    default-directory)
+                              load-path))
+           (buttercup-suites nil))
+      (buttercup-run-discover))))
 
 ;;;###autoload
 (defun +emacs-lisp/edebug-instrument-defun-on ()
@@ -302,13 +234,21 @@ are set by `+emacs-lisp-linter-warnings'
 This backend does not need to be added directly
 as `+emacs-lisp-non-package-mode' will enable it and disable the other checkers."
   (when (doom-project-p)
+    (when (and (fboundp 'trusted-content-p)
+               (not (trusted-content-p))) ; Emacs 31+
+      (message "Disabling elisp-flymake-byte-compile in %s (untrusted content)"
+               (buffer-name))
+      (user-error "Disabling elisp-flymake-byte-compile in %s (untrusted content)"
+                  (buffer-name)))
     ;; if a process already exists. kill it.
     (when (and +emacs-lisp-reduced-flymake-byte-compile--process
                (process-live-p +emacs-lisp-reduced-flymake-byte-compile--process))
       (kill-process +emacs-lisp-reduced-flymake-byte-compile--process))
     (let ((source (current-buffer))
           (tmp-file (make-temp-file "+emacs-lisp-byte-compile-src"))
-          (out-buf (generate-new-buffer "+emacs-lisp-byte-compile-out")))
+          (out-buf (generate-new-buffer "+emacs-lisp-byte-compile-out"))
+          (coding-system-for-write 'utf-8-unix)
+          (coding-system-for-read 'utf-8))
       ;; write the content to a temp file
       (save-restriction
         (widen)
@@ -320,14 +260,23 @@ as `+emacs-lisp-non-package-mode' will enable it and disable the other checkers.
              :noquery t
              :connection-type 'pipe
              :buffer out-buf
-             :command `(,(expand-file-name invocation-name invocation-directory)
-                        "-Q"
-                        "--batch"
+             :command `(,(if (fboundp 'elisp-flymake-byte-compile--executable) ; Emacs 30+
+                             (elisp-flymake-byte-compile--executable)
+                           (expand-file-name invocation-name invocation-directory))
+                        "-Q" "--batch"
                         ,@(mapcan (lambda (p) (list "-L" p)) elisp-flymake-byte-compile-load-path)
-                        ;; this is what silences the byte compiler
-                        "--eval" ,(prin1-to-string `(setq doom-modules ',doom-modules
-                                                          doom-disabled-packages ',doom-disabled-packages
-                                                          byte-compile-warnings ',+emacs-lisp-linter-warnings))
+                        ;; Appease the byte-compiler by loading Doom
+                        "-L" ,doom-core-dir
+                        "--eval" ,(prin1-to-string
+                                   `(let ((gc-cons-threshold most-positive-fixnum)
+                                          (gc-cons-percentage 1.0))
+                                      (require 'doom)
+                                      (doom-initialize ,(doom-profile->id doom-profile))
+                                      (setq byte-compile-warnings ',+emacs-lisp-linter-warnings)
+                                      (startup--load-user-init-file nil)))
+                        ,@(and (derived-mode-p 'lisp-interaction-mode)
+                               '("--eval"
+                                 "(setq bytecomp--inhibit-lexical-cookie-warning t)"))
                         "-f" "elisp-flymake--batch-compile-for-flymake"
                         ,tmp-file)
              :stderr "*stderr of +elisp-flymake-byte-compile-out*"
@@ -340,7 +289,7 @@ as `+emacs-lisp-non-package-mode' will enable it and disable the other checkers.
                       ;; if the buffer is dead or the process is not the same, log the process as old.
                       ((or (not (buffer-live-p source))
                            (not (with-current-buffer source (eq proc +emacs-lisp-reduced-flymake-byte-compile--process))))
-                       (flymake-log :warning "byte compile process %s is old" proc))
+                       (eval `(flymake-log :warning "byte compile process %s is old" ,proc) t))
                       ;; if the process exited without problem process the buffer
                       ((zerop (process-exit-status proc))
                        (elisp-flymake--byte-compile-done report-fn source out-buf))

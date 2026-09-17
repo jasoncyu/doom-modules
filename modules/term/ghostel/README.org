@@ -1,3 +1,4 @@
+# -*- doom-docs -*-
 #+title:    :term ghostel
 #+subtitle: The best terminal emulation in Emacs
 #+created:  June 24, 2026
@@ -7,14 +8,14 @@
 This module provides support for [[https://github.com/dakra/ghostel][ghostel]], an Emacs terminal emulator powered by
 =libghostty-vt=.
 
-#+begin_quote
- 💡 [[doom-package:ghostel]] is a modern alternative to [[doom-module::term vterm][:term vterm]], with support for
-    synchronized output, the Kitty keyboard and graphics protocols, OSC 8
-    hyperlinks, and true color. Like vterm, it requires extra steps to set up.
+#+begin_quote tip
+[[package:][ghostel]] is a modern alternative to vterm, with support for synchronized output,
+the Kitty keyboard and graphics protocols, OSC 8 hyperlinks, and true color.
+Like vterm, it requires extra steps to set up.
 #+end_quote
 
 ** Maintainers
-- [[doom-user:][@hlissner]]
+- [[github:hlissner]]
 
 [[doom-contrib-maintainer:][Become a maintainer?]]
 
@@ -24,15 +25,11 @@ This module provides support for [[https://github.com/dakra/ghostel][ghostel]], 
   commands, comint, and eshell.
 
 ** Packages
-- [[doom-package:ghostel]]
-- [[doom-package:evil-ghostel]] if [[doom-module::editor evil +everywhere]]
+- [[package:ghostel]]
+- [[package:evil-ghostel]] if [[module::editor evil +everywhere]]
 
 ** Hacks
 /No hacks documented for this module./
-
-** TODO Changelog
-# This section will be machine generated. Don't edit it by hand.
-/This module does not have a changelog yet./
 
 * Installation
 [[id:01cffea4-3329-45e2-a892-95a384ab2338][Enable this module in your ~doom!~ block.]]
@@ -67,17 +64,23 @@ Auto-install behavior is controlled by [[var:][ghostel-module-auto-install]] (de
 #+end_src
 
 * TODO Usage
-#+begin_quote
-󱌣 This module has no usage documentation yet. [[doom-contrib-module:][Write some?]]
+#+begin_quote wip
+This module has no usage documentation yet. [[doom-contrib-module:][Write some?]]
 #+end_quote
 
 * TODO Configuration
-#+begin_quote
-󱌣 This module has no configuration documentation yet. [[doom-contrib-module:][Write some?]]
+#+begin_quote wip
+This module has no configuration documentation yet. [[doom-contrib-module:][Write some?]]
 #+end_quote
 
 * Troubleshooting
-/There are no known problems with this module./ [[doom-report:][Report one?]]
+[[doom-report:][Report an issue?]]
+
+** Zig fails to compile the dynamic module
+Each version of the Ghostty module requires a different, and specific, version
+of Zig to successfully compile. A support table can be found [[https://ghostty.org/docs/install/build][in ghostty's build
+instructions]], along with links to static binaries if your OS package manager
+doesn't offer the version you need.
 
 * Frequently asked questions
-/This module has no FAQs yet./ [[doom-suggest-faq:][Ask one?]]
+/This module has no FAQs yet./ [[doom-contrib-faq:][Ask one?]]

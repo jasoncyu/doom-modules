@@ -43,8 +43,8 @@
         "Remove extraneous switches from `dired-actual-switches' when it's
 uncertain that they are supported (e.g. over TRAMP or on Windows).
 
-Fixes #1703: dired over TRAMP displays a blank screen.
-Fixes #3939: unsortable dired entries on Windows."
+Fixes doomemacs/core#1703: dired over TRAMP displays a blank screen.
+Fixes doomemacs/core#3939: unsortable dired entries on Windows."
         (when (or (file-remote-p default-directory)
                   (and (boundp 'ls-lisp-use-insert-directory-program)
                        (not ls-lisp-use-insert-directory-program)))
@@ -73,7 +73,7 @@ Fixes #3939: unsortable dired entries on Windows."
   :commands (dirvish-dired-noselect-a dirvish--find-entry)
   :general (dired-mode-map "C-c C-r" #'dirvish-rsync)
   :init
-  (setq dirvish-cache-dir (file-name-concat doom-cache-dir "dirvish/"))
+  (setq dirvish-cache-dir (doom-cache-dir "dirvish/"))
   ;; HACK: ...
   (advice-add #'dired--find-file :override #'dirvish--find-entry)
   (advice-add #'dired-noselect :around #'dirvish-dired-noselect-a)
@@ -93,12 +93,13 @@ Fixes #3939: unsortable dired entries on Windows."
     (when (eq (frame-selected-window) window)
       (funcall fn window)))
 
-  ;; Fixes #8038. This setting is for folks who expect to be able to switch back
-  ;; to dired buffers where the file is opened from.  In other cases, don't
-  ;; recycle sessions. We don't want leftover buffers lying around, especially
-  ;; if users are reconfiguring Dirvish or trying to recover from an error. It's
-  ;; too easy to accidentally break Dirvish (e.g. by focusing the header window)
-  ;; at the moment.  Starting from scratch isn't even that expensive, anyway.
+  ;; Fixes doomemacs/core#8038. This setting is for folks who expect to be able
+  ;; to switch back to dired buffers where the file is opened from.  In other
+  ;; cases, don't recycle sessions. We don't want leftover buffers lying around,
+  ;; especially if users are reconfiguring Dirvish or trying to recover from an
+  ;; error. It's too easy to accidentally break Dirvish (e.g. by focusing the
+  ;; header window) at the moment.  Starting from scratch isn't even that
+  ;; expensive, anyway.
   (setq dirvish-reuse-session 'open)
 
   (if (modulep! +dirvish)

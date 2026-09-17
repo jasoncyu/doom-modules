@@ -1,8 +1,8 @@
 ;; -*- no-byte-compile: t; -*-
 ;;; completion/corfu/packages.el
 
-(package! corfu :pin "80b3e0264b840c98a131534c2cfd585659ad1372")
-(package! cape :pin "9a93d13e223ca3fc469bce4b2932d9e74bdfae57")
+(package! corfu :pin "6477aac54fa1ea4865b23d7562e48b83a082a1e4")
+(package! cape :pin "bd827d913f487d2bb3815731ac20b60419b9cb03")
 (when (modulep! +icons)
   (package! nerd-icons-corfu :pin "f821e953b1a3dc9b381bc53486aabf366bf11cb1"))
 (when (and (not (modulep! :completion vertico))

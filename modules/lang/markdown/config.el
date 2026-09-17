@@ -138,13 +138,13 @@ capture, the end position, and the output buffer.")
   :commands (markdown-ts-mode)
   :defer t
   :init
-  (set-tree-sitter! 'markdown-mode 'markdown-ts-mode
-    `((markdown :url "https://github.com/tree-sitter-grammars/tree-sitter-markdown"
-                :rev ,(if (< (treesit-library-abi-version) 15) "v0.4.1" "v0.5.3")
-                :source-dir "tree-sitter-markdown/src")
-      (markdown-inline :url "https://github.com/tree-sitter-grammars/tree-sitter-markdown"
-                       :rev ,(if (< (treesit-library-abi-version) 15) "v0.4.1" "v0.5.3")
-                       :source-dir "tree-sitter-markdown-inline/src"))))
+  (set-tree-sitter! '(markdown-mode gfm-mode) 'markdown-ts-mode '(markdown markdown-inline))
+  :config
+  (+markdown-common-config 'markdown-ts-mode)
+  (map! :map markdown-ts-mode-map
+        [remap markdown-toggle-inline-images] #'markdown-ts-toggle-inline-images
+        [remap markdown-toggle-markup-hiding] #'markdown-ts-toggle-hide-markup
+        [remap markdown-toggle-gfm-checkbox]  #'markdown-ts-toggle-checkbox))
 
 
 (use-package! evil-markdown

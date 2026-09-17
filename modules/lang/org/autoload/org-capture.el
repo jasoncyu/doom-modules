@@ -1,10 +1,9 @@
 ;;; lang/org/autoload/org-capture.el -*- lexical-binding: t; -*-
-
-(defvar org-capture-initial)
-
+;;; Commentary:
+;;; Code:
 
 ;;
-;;; External frame
+;;; * External frame
 
 (defvar +org-capture-fn #'org-capture
   "Command to use to initiate org-capture.")
@@ -57,8 +56,8 @@ you're done. This can be called from an external shell script."
       (condition-case ex
           (letf! ((#'pop-to-buffer #'switch-to-buffer))
             (switch-to-buffer (doom-fallback-buffer))
-            (let ((org-capture-initial initial-input)
-                  org-capture-entry)
+            (dlet ((org-capture-initial initial-input)
+                   org-capture-entry)
               (when (and key (not (string-empty-p key)))
                 (setq org-capture-entry (org-capture-select-template key)))
               (funcall +org-capture-fn)))
@@ -73,7 +72,7 @@ you're done. This can be called from an external shell script."
 
 
 ;;
-;;; Capture targets
+;;; * Capture targets
 
 ;;;###autoload
 (defun +org-capture-todo-file ()
@@ -161,3 +160,5 @@ project."
   "TODO"
   (+org--capture-central-file
    +org-capture-projects-file (projectile-project-name)))
+
+;;; org-capture.el ends here

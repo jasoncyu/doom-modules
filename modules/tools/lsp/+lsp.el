@@ -50,7 +50,7 @@ Can be a list of backends; accepts any value `company-backends' accepts.")
         lsp-vetur-global-snippets-dir
         (expand-file-name
          "vetur" (or (bound-and-true-p +snippets-dir)
-                     (file-name-concat doom-user-dir "snippets/")))
+                     (doom-user-dir "snippets/")))
         lsp-xml-jar-file (expand-file-name "org.eclipse.lsp4xml-0.3.0-uber.jar" lsp-server-install-dir)
         lsp-groovy-server-file (expand-file-name "groovy-language-server-all.jar" lsp-server-install-dir))
 
@@ -195,10 +195,6 @@ instead is more sensible."
         lsp-ui-doc-show-with-mouse nil  ; don't disappear on mouseover
         lsp-ui-doc-position 'at-point
         lsp-ui-sideline-ignore-duplicate t
-        ;; Don't show symbol definitions in the sideline. They are pretty noisy,
-        ;; and there is a bug preventing Flycheck errors from being shown (the
-        ;; errors flash briefly and then disappear).
-        lsp-ui-sideline-show-hover nil
         ;; Re-enable icon scaling (it's disabled by default upstream for Emacs
         ;; 26.x compatibility; see emacs-lsp/lsp-ui#573)
         lsp-ui-sideline-actions-icon lsp-ui-sideline-actions-icon-default)

@@ -42,6 +42,9 @@ adjustment.")
 (defvar +popup-buffer-mode-map
   (let ((map (make-sparse-keymap)))
     (when (modulep! :editor evil)
+      ;; Make some commands behave more intuitively in popups.
+      (define-key map [remap doom/window-maximize-buffer] #'+popup/raise)
+      (define-key map [remap kill-current-buffer] #'+popup/kill)
       ;; For maximum escape coverage in emacs state buffers; this only works in
       ;; GUI Emacs, in tty Emacs use C-g instead
       (define-key map [escape] #'doom/escape))
@@ -112,8 +115,11 @@ prevent the popup(s) from messing up the UI (or vice versa)."
           (+popup--inhibit-transient t)
           buffer-list-update-hook
           +popup--last)
-     (dolist (p popups)
-       (+popup/close p 'force))
+     (when popups
+       (+popup--remember popups)
+       (let (+popup--remember-last)
+         (dolist (p popups)
+           (+popup/close p 'force))))
      (unwind-protect
          (progn ,@body)
        (when popups

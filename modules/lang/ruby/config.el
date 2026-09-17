@@ -4,9 +4,18 @@
 (after! projectile
   (add-to-list 'projectile-project-root-files "Gemfile"))
 
+(add-to-list 'doom-which-key-trim-prefixes "^projectile-rails-")
+
 
 ;;
 ;;; Packages
+
+(defun +ruby-common-config (mode)
+  (set-electric! mode :words '("else" "end" "elsif"))
+  (set-repl-handler! mode #'inf-ruby)
+  (when (modulep! +lsp)
+    (add-hook (intern (format "%s-local-vars-hook" mode)) #'lsp! 'append)))
+
 
 (use-package! ruby-mode  ; built-in
   ;; Other extensions are already registered in `auto-mode-alist' by `ruby-mode'
@@ -14,13 +23,11 @@
   :mode "/\\(?:Brew\\|Fast\\)file\\'"
   :interpreter "j?ruby\\(?:[0-9.]+\\)"
   :config
+  (+ruby-common-config 'ruby-mode)
+
   (setq ruby-insert-encoding-magic-comment nil)
 
-  (set-electric! 'ruby-mode :words '("else" "end" "elsif"))
-  (set-repl-handler! 'ruby-mode #'inf-ruby)
-
-  (when (modulep! +lsp)
-    (add-hook 'ruby-mode-local-vars-hook #'lsp! 'append))
+  (add-to-list 'completion-ignored-extensions ".rbc")
 
   (after! inf-ruby
     ;; Switch to inf-ruby from compile if a breakpoint is detected
@@ -30,31 +37,29 @@
   (setq-hook! 'ruby-mode-hook sp-max-pair-length 6)
 
   (map! :localleader
-        :map ruby-mode-map
+        :map ruby-base-mode-map
         "[" #'ruby-toggle-block
         "{" #'ruby-toggle-block))
+
 
 (use-package! ruby-ts-mode  ; 29.1+ only
   :when (modulep! +tree-sitter)
   :defer t
   :init
-  (set-tree-sitter! 'ruby-mode 'ruby-ts-mode
-    '((ruby :url "https://github.com/tree-sitter/tree-sitter-ruby"
-            :commit "71bd32fb7607035768799732addba884a37a6210")))
+  (set-tree-sitter! 'ruby-mode 'ruby-ts-mode 'ruby)
   :config
-  (set-electric! 'ruby-ts-mode :words '("else" "end" "elsif"))
-  (set-repl-handler! 'ruby-ts-mode #'inf-ruby)
-  (when (modulep! +lsp)
-    (add-hook 'ruby-ts-mode-local-vars-hook #'lsp! 'append)))
+  (+ruby-common-config 'ruby-ts-mode))
+
 
 (use-package! yard-mode
   :hook ruby-mode)
+
 
 (use-package! ruby-json-to-hash
   :defer t
   :init
   (map! :after ruby-mode
-        :map ruby-mode-map
+        :map ruby-base-mode-map
         :localleader
         "J" #'ruby-json-to-hash-parse-json
         "j" #'ruby-json-to-hash-toggle-let))
@@ -70,7 +75,7 @@
   (setq rake-completion-system 'default)
   (map! :after ruby-mode
         :localleader
-        :map ruby-mode-map
+        :map ruby-base-mode-map
         :prefix ("k" . "rake")
         "k" #'rake
         "r" #'rake-rerun
@@ -82,7 +87,7 @@
   :init
   (map! :after ruby-mode
         :localleader
-        :map ruby-mode-map
+        :map ruby-base-mode-map
         :prefix ("b" . "bundle")
         "c" #'bundle-check
         "C" #'bundle-console
@@ -177,7 +182,7 @@
   :defer t
   :init
   (map! :after ruby-mode
-        :map ruby-mode-map
+        :map ruby-base-mode-map
         "C-c o" #'rails-routes-insert
         "C-c C-o" #'rails-routes-insert-no-cache
         "C-c ! o" #'rails-routes-jump)
@@ -192,7 +197,7 @@
   :defer t
   :init
   (map! :after ruby-mode
-        :map ruby-mode-map
+        :map ruby-base-mode-map
         "C-c i" #'rails-i18n-insert-with-cache)
   (map! :after web-mode
         :map web-mode-map

@@ -3,13 +3,12 @@
 
 (if (modulep! +eglot)
     (progn
-      (package! eglot :pin "63ce7e0bba84756027ad0340fede6c1cf8c6b1ca")
-      (package! jsonrpc :pin "70dc1806ae83abae7c6c9924a29d736d9393c279" :freeze t)
+      (package! eglot :pin "1bb1ce987a957241c2410754fbcf006bcd8a89fb")
+      (package! jsonrpc :pin "d8143c52679eaeebcca26dd41e015dc73d167b49")
       (when (modulep! :completion vertico)
-        (package! consult-eglot :pin "d8b444aac39edfc6473ffbd228df3e9119451b51"))
-      (when (modulep! :checkers syntax -flymake)
-        (package! flycheck-eglot :pin "cd1dd78cec0ae1f566c765d98bbff322cc7b67ef"))
-      (when (modulep! +booster)
+        (package! consult-eglot :pin "3e4d9a40911b897c0a2c5d20199d0f7c30bfc1c2"))
+      ;; DEPRECATED: Remove when 29 support is dropped
+      (when (and (< emacs-major-version 30) (modulep! +booster))
         (package! eglot-booster
           :recipe (:host github :repo "jdtsmith/eglot-booster")
           :pin "cab7803c4f0adc7fff9da6680f90110674bb7a22")))
@@ -19,7 +18,7 @@
   (eval-and-compile (defvar lsp-use-plists t))
 
   (package! lsp-mode
-    :pin "5d9e72816a36ec5b0fbf128c25f88e5daaae5b41"
+    :pin "e15b8205cbd0369df40b412909eb3ed3264e96a2"
     :env `(("LSP_USE_PLISTS" . ,(and lsp-use-plists "1"))))
   (package! lsp-ui :pin "ff349658ed69086bd18c336c8a071ba15f7fd574")
   (when (modulep! :completion ivy)

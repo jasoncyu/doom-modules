@@ -1,24 +1,8 @@
-#+TITLE:   tools/collab
-#+DATE:    September 2, 2022
-#+SINCE:   v3.0.0
-#+STARTUP: inlineimage nofold
-
-* Table of Contents :TOC_3:noexport:
-- [[#description][Description]]
-  - [[#maintainers][Maintainers]]
-  - [[#module-flags][Module Flags]]
-  - [[#plugins][Plugins]]
-- [[#prerequisites][Prerequisites]]
-  - [[#with-tunnel][With =+tunnel=]]
-    - [[#macos][macOS]]
-    - [[#linux][Linux]]
-    - [[#windows][Windows]]
-- [[#features][Features]]
-  - [[#keybindings][Keybindings]]
-- [[#configuration][Configuration]]
-- [[#troubleshooting][Troubleshooting]]
-  - [[#people-outside-my-lan-cant-connect-to-the-collab-session-im-hosting][People outside my LAN can't connect to the collab session I'm hosting]]
-  - [[#i-got-an-error-saying-something-including-crdtel-protocol][I got an error saying something including "crdt.el protocol"]]
+# -*- doom-docs -*-
+#+title:    :tools collab
+#+subtitle: Buffers with friends
+#+created:  September 2, 2022
+#+since:    23.08.0
 
 * Description
 This module adds collaborative editing via the [[https://code.librehq.com/qhong/crdt.el][crdt]] plugin.
@@ -31,11 +15,17 @@ This module adds collaborative editing via the [[https://code.librehq.com/qhong/
 + =+tunnel= Enables TCP forwarding over the [[https://tox.chat/][Tox]] protocol so that a collaborative
   editing session can be established between machines that are behind a NAT.
 
-** Plugins
-+ [[https://code.librehq.com/qhong/crdt.el][crdt]]
+** Packages
+- [[package:crdt]]
 
-* Prerequisites
-With no flags, this module requires nothing else to work. The =+tunnel= flag has one dependency:
+** Hacks
+/No hacks documented for this module./
+
+* Installation
+[[id:01cffea4-3329-45e2-a892-95a384ab2338][Enable this module in your ~doom!~ block.]]
+
+With no flags, this module requires nothing else to work. The =+tunnel= flag has
+one dependency:
 
 ** With =+tunnel=
 Tunneling requires the [[https://github.com/gjedeer/tuntox][tuntox]] program, which is used to establish TCP
@@ -103,6 +93,9 @@ When this module is enabled, the `SPC l` leader keymap becomes available, making
 
 
 * Configuration
+#+begin_quote wip
+/This module's configuration documentation is incomplete./ [[doom-contrib-module:][Complete it?]]
+#+end_quote
 
 This list is not exhaustive; for the full list of config options, type =SPC h V
 crdt-= after loading the module.
@@ -136,3 +129,6 @@ All collaborators must be using the same version of the crdt package in order to
 guarantee stability & support for all features. These types of errors should not
 occur if everyone is up to date, so ensure that all collaborators have upgraded
 Doom Emacs to the latest version and have not pinned =crdt=.
+
+* Frequently asked questions
+/This module has no FAQs yet./ [[doom-contrib-faq:][Ask one?]]

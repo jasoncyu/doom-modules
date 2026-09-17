@@ -79,9 +79,9 @@ Respects `diff-hl-disable-on-remote'."
 
   (unless (featurep :system 'macos)
     ;; Enable on-the-fly vc-gutter updating, but not on MacOS (particularly
-    ;; newer versions of MacOS), due to #8554. Seems process management chokes
-    ;; on the diff/git processes this spawns, so we downgrade to update-on-save
-    ;; there, by default.
+    ;; newer versions of MacOS), due to doomemacs/core#8554. Seems process
+    ;; management chokes on the diff/git processes this spawns, so we downgrade
+    ;; to update-on-save there, by default.
     (add-hook 'diff-hl-mode-hook #'diff-hl-flydiff-mode))
 
   :config
@@ -128,6 +128,7 @@ Respects `diff-hl-disable-on-remote'."
       "Return nil to prevent shadowing other `doom-escape-hook' hooks."
       (when-let* (((or (bound-and-true-p diff-hl-mode)
                        (bound-and-true-p diff-hl-dir-mode)))
+                  ((not (file-remote-p default-directory)))
                   (file (buffer-file-name (buffer-base-buffer)))
                   ((not ; debouncing
                     (equal (cons (point) +vc-gutter--last-state)
@@ -148,9 +149,8 @@ Respects `diff-hl-disable-on-remote'."
     :around #'diff-hl-revert-hunk-1
     (letf! ((refine-mode diff-auto-refine-mode)
             (diff-auto-refine-mode t)
-            (defun diff-refine-hunk ()
-              (when refine-mode
-                (funcall diff-refine-hunk))
+            (defadvice diff-refine-hunk (:around (fn &rest args))
+              (when refine-mode (apply fn args))
               (shrink-window-if-larger-than-buffer)))
       (apply fn args)))
 

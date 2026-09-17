@@ -6,8 +6,8 @@
     ;; Variable-width indentation is superior in elisp. Otherwise, `dtrt-indent'
     ;; and `editorconfig' would force fixed indentation on elisp.
     emacs-lisp-mode
-    ;; See #5823: indent detection is slow and inconclusive in these major modes
-    ;; so they are disabled there.
+    ;; See doomemacs/core#5823: indent detection is slow and inconclusive in
+    ;; these major modes so they are disabled there.
     coq-mode
     ;; Automatic indent detection in org files is meaningless. Not to mention, a
     ;; non-standard `tab-width' causes an error in org-mode.
@@ -60,8 +60,8 @@ or if the current buffer is read-only or not file-visiting."
         (cl-pushnew 'face whitespace-style) ; must be first
         (whitespace-mode +1))))
 
-  ;; Fix #8573: Editorconfig may change the tab-width or indent style later in a
-  ;;   file's init process, so whitespace-mode needs refreshing.
+  ;; Fix doomemacs/core#8573: Editorconfig may change the tab-width or indent
+  ;; style later in a file's init process, so whitespace-mode needs refreshing.
   (add-hook! 'editorconfig-after-apply-functions :append
     (defun +whitespace-highlight-incorrect-indentation-again-h (props)
       (when (and (bound-and-true-p whitespace-mode)  ; in case user disabled it
@@ -128,10 +128,10 @@ or if the current buffer is read-only or not file-visiting."
 `nim-mode'. This prevents them from leaving Emacs in a broken state."
     :around #'dtrt-indent-mode
     (let ((dtrt-indent-run-after-smie dtrt-indent-run-after-smie))
-      (letf! ((defun symbol-config--guess (beg end)
-                (funcall symbol-config--guess beg (min end 10000)))
-              (defun smie-config-guess ()
-                (condition-case e (funcall smie-config-guess)
+      (letf! ((defadvice symbol-config--guess (:around (fn beg end))
+                (funcall fn beg (min end 10000)))
+              (defadvice smie-config-guess (:around (fn))
+                (condition-case e (funcall fn)
                   (error (setq dtrt-indent-run-after-smie t)
                          (message "[WARNING] Indent detection: %s"
                                   (error-message-string e))
