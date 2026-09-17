@@ -34,7 +34,7 @@
 
   (setq-hook! 'ghostel-mode-hook
     confirm-kill-processes nil
-    hscroll-margin 0))
+    hscroll-margin 0)
 
 (use-package! evil-ghostel
   :when (modulep! :editor evil)
