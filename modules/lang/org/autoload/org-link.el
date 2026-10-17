@@ -89,34 +89,33 @@
   (unless (org-in-regexp org-link-bracket-re 1)
     (user-error "No link at point"))
   (let* ((link (org-link-unescape (match-string-no-properties 1)))
-         (type (and (string-match org-link-plain-re link)
-                    (match-string 1 link)))
-         (path (and (string-match org-link-plain-re link)
-                    (match-string 2 link)))
+         (description (and (match-end 2)
+                           (org-link-unescape (match-string-no-properties 2))))
+         (link-begin (match-beginning 0))
+         (link-end (match-end 0))
+         (link-parts (and (string-match org-link-plain-re link)
+                          (cons (match-string 1 link)
+                                (match-string 2 link))))
+         (type (car link-parts))
+         (path (cdr link-parts))
          (file-path (cond
-                     ;; Handle file: links
-                     ((or (string= type "file") (string= type "lc") )
+                     ;; Handle file: and lc: links
+                     ((and path (member type '("file" "lc")))
                       (expand-file-name path))
                      ;; Handle attachment: links
-                     ((string= type "attachment")
-                      (when (featurep 'org-attach)
-                        (org-attach-expand path)))
-                     ;; Handle relative file paths (no protocol)
+                     ((and path (equal type "attachment") (featurep 'org-attach))
+                      (org-attach-expand path))
+                     ;; Handle relative and absolute file paths without a protocol
                      ((and (not type) (file-exists-p (expand-file-name link)))
-                      (expand-file-name link))
-                     ;; Handle absolute file paths (no protocol)
-                     ((and (not type) (file-name-absolute-p link) (file-exists-p link))
-                      link))))
+                      (expand-file-name link)))))
     (when (and file-path (file-exists-p file-path))
       (when (yes-or-no-p (format "Delete file %s? " file-path))
         (delete-file file-path)
         (message "Deleted file: %s" file-path)))
-    ;; Remove the link regardless of whether file was deleted
-    (let ((label (if (match-end 2)
-                     (match-string-no-properties 2)
-                   (org-link-unescape (match-string-no-properties 1)))))
-      (delete-region (match-beginning 0) (match-end 0))
-      (insert label))))
+    ;; Remove the link regardless of whether file was deleted.
+    (delete-region link-begin link-end)
+    ;; (insert (or description link))
+    ))
 
 ;;;###autoload
 (defun +org/yank-link ()
