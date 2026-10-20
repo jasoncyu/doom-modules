@@ -17,7 +17,7 @@
 (when (modulep! :checkers syntax -flymake)
   (package! flycheck-package :pin "a52e4e95f3151898b36739dfdb4a98b368626fc0"))
 (when (modulep! :checkers syntax +flymake)
-  (package! package-lint-flymake :pin "87bf02ca387a37094e1a0057adefa9735d880cec"))
+  (package! package-lint-flymake :pin "1865be780a16098f972fef50a52b21ca6ee04df9"))
 
 ;; Libraries
 (package! buttercup :pin "2b1537af18498532f7dd58cfee9ac34f7f8a9d4b")

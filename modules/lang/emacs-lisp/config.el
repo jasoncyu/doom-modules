@@ -194,6 +194,31 @@ Use `+emacs-lisp/change-working-buffer' to change this. Only applies to
 (remove-hook 'emacs-lisp-mode-hook #'overseer-enable-mode)
 
 
+(use-package! checkdoc  ; built-in
+  :defer t
+  :config
+  ;; HACK: Complaining that highlighted symbols are ambiguous (is it a variable,
+  ;;   function, option, etc?) is silly, and satisfying the checker involves
+  ;;   prefixing highlighted symbols with one of a hardcoded list of words like
+  ;;   "function", "variable", or "option". Silly. Rigid. Turn it off.
+  ;; REVIEW: Get rid of the check or improve/modularize the heuristics upstream.
+  (setq checkdoc--disambiguate-symbol-flag nil)
+
+  ;; HACK: Checkdoc complains about *any* function that doesn't have a
+  ;;   docstring. With `checkdoc-force-docstrings-flag' off, it still complains
+  ;;   about interactive commands not having a docstring, but I want it to
+  ;;   complain for all docstring-less functions *except* private ones!
+  ;; REVIEW: PR more `checkdoc-force-docstrings-flag' settings upstream?
+  (defadvice! +emacs-lisp--checkdoc-defun-info-a (fn &rest args)
+    :around #'checkdoc-this-string-valid
+    (let* ((fp (checkdoc-defun-info))
+           (checkdoc--interactive-docstring-flag
+            (and checkdoc--interactive-docstring-flag
+                 (not (nth 1 fp))  ; not a variable
+                 (not (string-match-p "--" (nth 0 fp))))))
+      (apply fn args))))
+
+
 (use-package! package-lint
   :when (modulep! :checkers syntax)
   :defer t
