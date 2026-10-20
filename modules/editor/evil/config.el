@@ -707,3 +707,9 @@ don't offer any/enough real value to users.")
            :i "C-o"  #'completion-at-point
            :i "C-n"  #'+corfu-cape-dabbrev-replacement
            :i "C-p"  #'+corfu/dabbrev-this-buffer))))
+
+
+(use-package! evil-matchit
+  :after evil
+  :config
+  (global-evil-matchit-mode 1))
