@@ -86,10 +86,8 @@
           (flycheck-add-mode 'typescript-tide 'typescript-tsx-mode)))
       (add-hook! 'typescript-tsx-mode-hook
         (defun +javascript-disable-tide-checkers-h ()
-          (pushnew! flycheck-disabled-checkers
-                    'javascript-jshint
-                    'tsx-tide
-                    'jsx-tide)))))
+          (dolist (checker '(javascript-jshint tsx-tide jsx-tide))
+            (cl-pushnew checker flycheck-disabled-checkers))))))
   :unless (modulep! +tree-sitter)
   :mode "\\.[cm]?ts\\'"
   :config
