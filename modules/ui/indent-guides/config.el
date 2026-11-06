@@ -25,7 +25,7 @@ be enabled. If any function returns non-nil, the mode will not be activated."
     (unless (or (eq major-mode 'fundamental-mode)
                 (doom-temp-buffer-p (current-buffer))
                 (run-hook-with-args-until-success '+indent-guides-inhibit-functions))
-      (dlet (indent-bars-defer-setup) ; I defer it myself; don't override that
+      (dlet (indent-bars-defer-setup)   ; I defer it myself; don't override that
         (indent-bars-mode +1))))
 
   :config
@@ -56,6 +56,9 @@ be enabled. If any function returns non-nil, the mode will not be activated."
         ;; gaps in the indent guides, which looks odd. `least' is a good
         ;; compromise, and doesn't suffer the scrolling issue.
         indent-bars-display-on-blank-lines 'least)
+  ;; TODO: jason own custom idk if will keep
+  (setq-default indent-bars-no-descend-lists 'skip)
+  (setq indent-bars-color-by-depth '(:regexp "outline-\\([0-9]+\\)" :blend 1))
 
   ;; indent-bars adds this to `enable-theme-functions', which was introduced in
   ;; 29.1, which will be redundant with `doom-load-theme-hook'.
@@ -63,19 +66,19 @@ be enabled. If any function returns non-nil, the mode will not be activated."
     (add-hook 'doom-load-theme-hook #'indent-bars-reset-styles))
 
   (add-hook! '+indent-guides-inhibit-functions
-    ;; Buffers that may have special fontification or may be invisible to the
-    ;; user. Particularly src blocks, org agenda, or special modes like magit.
-    (defun +indent-guides-in-special-buffers-p ()
-      (and (not (derived-mode-p 'text-mode 'prog-mode 'conf-mode))
-           (or buffer-read-only
-               (bound-and-true-p cursor-intangible-mode)
-               (doom-special-buffer-p (current-buffer) t))))
-    ;; Org's virtual indentation messes up indent-guides.
-    (defun +indent-guides-in-org-indent-mode-p ()
-      (bound-and-true-p org-indent-mode))
-    ;; Don't display indent guides in childframe popups (which are almost always
-    ;; used for completion or eldoc popups).
-    #'frame-parent)
+             ;; Buffers that may have special fontification or may be invisible to the
+             ;; user. Particularly src blocks, org agenda, or special modes like magit.
+             (defun +indent-guides-in-special-buffers-p ()
+               (and (not (derived-mode-p 'text-mode 'prog-mode 'conf-mode))
+                    (or buffer-read-only
+                        (bound-and-true-p cursor-intangible-mode)
+                        (doom-special-buffer-p (current-buffer) t))))
+             ;; Org's virtual indentation messes up indent-guides.
+             (defun +indent-guides-in-org-indent-mode-p ()
+               (bound-and-true-p org-indent-mode))
+             ;; Don't display indent guides in childframe popups (which are almost always
+             ;; used for completion or eldoc popups).
+             #'frame-parent)
 
   ;; HACK: The way `indent-bars-display-on-blank-lines' functions, it places
   ;;   text properties with a display property containing a newline, which
