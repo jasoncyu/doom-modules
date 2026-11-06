@@ -240,8 +240,7 @@
         (sp-local-pair "{-#" "#-")
         (sp-local-pair "{-@" "@-")))
 
-    ;; Don't close parens in strings. Use this line OR instead do C-q ( to avoid auto-close behavior
-    (sp-local-pair 'prog-mode "(" ")" :unless '(sp-in-string-p))
+    ;; Use C-q ( or C-q ) to insert a literal paren without pairing.
     (after! smartparens-python
       (sp-with-modes '(python-mode python-ts-mode)
         ;; Automatically close f-strings
