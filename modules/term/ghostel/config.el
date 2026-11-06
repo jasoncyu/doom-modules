@@ -4,7 +4,7 @@
   :commands ghostel-mode
   :hook (ghostel-mode . mode-line-invisible-mode)
   :config
-  (set-popup-rule! "^\\*doom:ghostel-popup" :size 0.25 :vslot -4 :select t :quit nil :ttl 0)
+  (set-popup-rule! "^\\*\\(?:doom:\\)?ghostel" :height 0.5 :vslot -4 :select t :quit nil :ttl 0)
 
   ;; HACK: See dakra/ghostel#456. Persp-mode stores buffers by name, so if
   ;;   ghostel renames a buffer, persp-mode will lose track of it.
